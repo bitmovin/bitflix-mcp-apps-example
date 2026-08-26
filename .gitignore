@@ -1,0 +1,17 @@
+node_modules/
+dist/
+.skybridge/
+
+# secrets — never commit
+.env
+.env.*
+!.env.example
+
+# build / deploy artifacts (contain build output + project identifiers)
+.vercel/
+.alpic/
+tsconfig.tsbuildinfo
+
+# misc
+*.log
+.DS_Store
