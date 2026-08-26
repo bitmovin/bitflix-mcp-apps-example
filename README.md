@@ -20,15 +20,16 @@ so it runs in the local playground, behind a dev tunnel, or deployed to a perman
 ```
 src/
 ├── catalog.ts          # content: titles, public test streams, sections, search/recommend
-├── server.ts           # McpServer + 4 tools (registerTool), per-view CSP, license-key injection
+├── server.ts           # McpServer + 5 tools (registerTool), per-view CSP, license-key injection
 ├── env.ts              # typed env (BITMOVIN_PLAYER_KEY)
 ├── helpers.ts          # generateHelpers<AppType>() → typed useToolInfo / useCallTool
 ├── index.css           # the cinematic broadcast OTT design system
 └── views/
-    ├── browse.tsx · recommend.tsx · live.tsx · player.tsx   # one entry per tool
+    ├── browse.tsx · recommend.tsx · live.tsx · player.tsx · diagnostics.tsx  # one entry per tool
     └── components/
         ├── BitflixApp.tsx      # shared widget: browse + player + cast + chips
         ├── BitmovinPlayer.tsx  # Bitmovin Player in a React component
+        ├── Diagnostics.tsx     # video-capability probe for the host sandbox (DRM, fullscreen, cast…)
         └── cover.ts            # generative per-genre SVG cover art
 ```
 
@@ -40,10 +41,17 @@ src/
 | `get_recommendations` | `recommend` | "what should I watch tonight?" |
 | `whats_live` | `live` | "any games on?", "put the news on" |
 | `play_title` | `player` | "play the finals", "resume Aurora" |
+| `run_diagnostics` | `diagnostics` | "test what video features work here" |
 
-All four render the shared `BitflixApp`, which switches between the browse face and the player face
-on `payload.view`. Tiles are clickable (instant local play, no round-trip); the category chips call
-back to the server with `useCallTool`; `data-llm` keeps the model in sync with what's on screen.
+The first four render the shared `BitflixApp`, which switches between the browse face and the player
+face on `payload.view`. Tiles are clickable (instant local play, no round-trip); the category chips
+call back to the server with `useCallTool`; `data-llm` keeps the model in sync with what's on screen.
+
+`run_diagnostics` renders the `Diagnostics` view instead — a live probe of what the current MCP host's
+widget sandbox actually supports for video: EME/DRM key systems (Widevine, PlayReady, FairPlay,
+ClearKey), MSE, Web Workers, WebAssembly, fullscreen (both the host display-mode request and the native
+Fullscreen API), Picture-in-Picture, casting/Presentation, and autoplay. It's the evidence behind the
+video-in-MCP-Apps feedback, not part of the consumer flow.
 
 ### Content / streams
 

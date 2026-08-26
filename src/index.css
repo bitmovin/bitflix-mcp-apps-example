@@ -17,6 +17,11 @@
   --ember-1: #ff8a3d;
   --ember-2: #ff2d55;
   --live: #ff2d3d;
+  /* Broadcast signal — a cool monitor tone for live timecode / data chrome, so
+     the palette reads two-tone (warm content, cool signal) rather than a single
+     warm accent on black. */
+  --signal: #57e0d6;
+  --signal-dim: rgba(87, 224, 214, 0.7);
   --line: rgba(255, 255, 255, 0.09);
   --line-strong: rgba(255, 255, 255, 0.16);
   --radius: 14px;
@@ -111,8 +116,19 @@ body::after {
     linear-gradient(90deg, rgba(8,8,11,0.7) 0%, rgba(8,8,11,0.1) 55%, transparent 100%);
 }
 .hero .hero-inner { padding: clamp(18px, 4vw, 34px); width: 100%; }
-.hero .kicker { font-size: 12px; font-weight: 700; letter-spacing: 0.18em; text-transform: uppercase; color: var(--ember-1); margin-bottom: 10px; }
-.hero h2 { font-family: var(--display); font-weight: 800; font-size: clamp(34px, 7vw, 64px); line-height: 0.9; letter-spacing: 0.01em; max-width: 16ch; margin-bottom: 12px; }
+.hero .kicker { display: inline-flex; align-items: center; gap: 10px; font-size: 12px; font-weight: 700; letter-spacing: 0.18em; text-transform: uppercase; color: var(--ember-1); margin-bottom: 10px; }
+.hero .kicker::before { content: ""; width: 26px; height: 2px; border-radius: 2px; background: linear-gradient(90deg, var(--ember-1), var(--ember-2)); }
+.hero h2 { font-family: var(--display); font-weight: 800; font-size: clamp(36px, 7.4vw, 68px); line-height: 0.88; letter-spacing: 0.01em; max-width: 16ch; margin-bottom: 12px; text-shadow: 0 2px 30px rgba(255, 90, 40, 0.28); }
+
+/* Signature: a slow broadcast "spotlight" sweep across the hero art — one
+   orchestrated cinematic moment. Sits above the art, under the scrim/content. */
+.hero .art::after {
+  content: ""; position: absolute; inset: -20% -40%; pointer-events: none;
+  background: linear-gradient(75deg, transparent 38%, rgba(255, 170, 120, 0.14) 48%, rgba(255, 255, 255, 0.05) 52%, transparent 62%);
+  transform: translateX(-40%);
+  animation: heroSweep 8.5s var(--ease) infinite;
+}
+@keyframes heroSweep { 0%, 100% { transform: translateX(-40%); opacity: 0; } 12% { opacity: 1; } 46%, 100% { transform: translateX(40%); opacity: 0; } }
 .hero .syn { color: var(--ink-dim); max-width: 56ch; font-size: 14.5px; line-height: 1.5; margin-bottom: 18px; }
 .hero-actions { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
 
@@ -143,7 +159,7 @@ body::after {
   50% { opacity: 0.65; transform: scale(0.78); box-shadow: 0 0 0 5px rgba(255,255,255,0); }
 }
 .score { font-family: var(--display); font-weight: 700; font-size: 17px; letter-spacing: 0.06em; color: var(--ink); }
-.live-clock { font-size: 12.5px; color: var(--ink-dim); font-weight: 600; }
+.live-clock { font-size: 12.5px; color: var(--signal-dim); font-weight: 600; letter-spacing: 0.04em; font-variant-numeric: tabular-nums; }
 
 /* ── Rails ────────────────────────────────────────────────────────── */
 .rail { margin-bottom: 28px; }
@@ -288,3 +304,28 @@ body::after {
 .pill.unknown { background: rgba(255, 255, 255, 0.08); color: var(--ink-dim); }
 .pill.pending { background: rgba(255, 255, 255, 0.06); color: var(--ink-faint); }
 @media (max-width: 560px) { .diag-label { min-width: 130px; } }
+
+/* ── Showcase pass — load orchestration, accessibility floor ──────────
+   Rails settle in on load, top rail first, each a beat behind the last.
+   One quiet motion, not scattered effects. */
+.bitflix-root .rail { animation: railIn 0.62s var(--ease) both; }
+.bitflix-root .rail:nth-of-type(1) { animation-delay: 0.02s; }
+.bitflix-root .rail:nth-of-type(2) { animation-delay: 0.10s; }
+.bitflix-root .rail:nth-of-type(3) { animation-delay: 0.18s; }
+.bitflix-root .rail:nth-of-type(4) { animation-delay: 0.26s; }
+.bitflix-root .rail:nth-of-type(n+5) { animation-delay: 0.34s; }
+@keyframes railIn { from { opacity: 0; transform: translateY(18px); } to { opacity: 1; transform: none; } }
+
+/* Visible keyboard focus on every interactive surface. */
+.chip:focus-visible, .btn:focus-visible, .card:focus-visible, .iconbtn:focus-visible,
+.device:focus-visible, .hero:focus-visible {
+  outline: 2px solid var(--signal); outline-offset: 3px; border-radius: 10px;
+}
+
+/* Respect reduced motion: keep everything, drop the movement. */
+@media (prefers-reduced-motion: reduce) {
+  .bitflix-root .rail { animation: none; opacity: 1; transform: none; }
+  .hero .art::after { animation: none; opacity: 0; }
+  .card:hover .art svg { transform: none; }
+  .badge.live::before, .casting-banner .tv-ic, .casting-banner .waves span { animation: none; }
+}
