@@ -65,14 +65,27 @@ body::after {
 }
 
 /* ── Top bar ──────────────────────────────────────────────────────── */
-.topbar { display: flex; align-items: center; gap: 14px; margin-bottom: 18px; }
+.topbar { display: flex; align-items: center; gap: 14px; margin-bottom: 20px; padding-bottom: 14px; border-bottom: 1px solid var(--line); }
 .wordmark {
-  font-family: var(--display); font-weight: 800; font-size: 26px;
-  letter-spacing: 0.14em; line-height: 1;
+  font-family: var(--display); font-weight: 900; font-size: 27px;
+  letter-spacing: 0.15em; line-height: 1;
   background: linear-gradient(100deg, var(--ember-1), var(--ember-2));
   -webkit-background-clip: text; background-clip: text; color: transparent; white-space: nowrap;
+  filter: drop-shadow(0 2px 14px rgba(255, 90, 40, 0.35));
 }
 .wordmark .dot { color: var(--ember-2); -webkit-text-fill-color: var(--ember-2); }
+
+/* Broadcast identity — a live "ON AIR" bug with a ticking timecode. */
+.onair {
+  display: inline-flex; align-items: center; gap: 8px;
+  font-family: var(--display); font-weight: 700; font-size: 11.5px; letter-spacing: 0.16em;
+  color: var(--signal); padding: 5px 11px 5px 9px; border-radius: 999px;
+  border: 1px solid rgba(87, 224, 214, 0.28); background: rgba(87, 224, 214, 0.07);
+  backdrop-filter: blur(8px); white-space: nowrap;
+}
+.onair-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--signal); box-shadow: 0 0 10px var(--signal); animation: pulse 1.6s var(--ease) infinite; }
+.onair-time { color: var(--ink-dim); font-family: var(--body); font-weight: 600; font-size: 11.5px; letter-spacing: 0.06em; font-variant-numeric: tabular-nums; padding-left: 3px; }
+@media (max-width: 560px) { .onair-time { display: none; } }
 .topbar .spacer { flex: 1; }
 .prompt-chip {
   display: inline-flex; align-items: center; gap: 8px; max-width: 60%;
@@ -89,12 +102,12 @@ body::after {
 .chips { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 20px; }
 .chip {
   font-family: var(--body); font-size: 12.5px; font-weight: 600; letter-spacing: 0.02em;
-  color: var(--ink-dim); padding: 7px 13px; border: 1px solid var(--line);
-  border-radius: 999px; background: transparent; cursor: pointer;
+  color: var(--ink-dim); padding: 8px 14px; border: 1px solid var(--line);
+  border-radius: 999px; background: rgba(255, 255, 255, 0.03); backdrop-filter: blur(6px); cursor: pointer;
   transition: all 0.25s var(--ease); white-space: nowrap;
 }
-.chip:hover { color: var(--ink); border-color: var(--line-strong); transform: translateY(-1px); }
-.chip.is-active { color: #140a06; background: linear-gradient(100deg, var(--ember-1), var(--ember-2)); border-color: transparent; }
+.chip:hover { color: var(--ink); border-color: var(--line-strong); background: rgba(255, 255, 255, 0.07); transform: translateY(-1px); }
+.chip.is-active { color: #140a06; background: linear-gradient(100deg, var(--ember-1), var(--ember-2)); border-color: transparent; box-shadow: 0 8px 22px -10px rgba(255, 70, 60, 0.7); }
 
 /* ── Headline ─────────────────────────────────────────────────────── */
 .headline { margin-bottom: 18px; }
@@ -104,16 +117,27 @@ body::after {
 /* ── Hero ─────────────────────────────────────────────────────────── */
 .hero {
   position: relative; border-radius: var(--radius-lg); overflow: hidden;
-  border: 1px solid var(--line); box-shadow: var(--shadow); margin-bottom: 30px;
-  min-height: 300px; display: flex; align-items: flex-end; cursor: pointer; isolation: isolate;
+  border: 1px solid var(--line-strong); box-shadow: var(--shadow); margin-bottom: 32px;
+  min-height: clamp(340px, 46vw, 480px); display: flex; align-items: flex-end; cursor: pointer; isolation: isolate;
 }
-.hero .art { position: absolute; inset: 0; z-index: -1; }
-.hero .art svg { width: 100%; height: 100%; display: block; }
+/* Inset vignette + hairline sheen for depth on the featured frame. Sits below
+   the hero content (z-index -1) so it deepens the base and aids text legibility
+   rather than dimming the copy. */
+.hero::before {
+  content: ""; position: absolute; inset: 0; z-index: -1; pointer-events: none; border-radius: inherit;
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,0.06), inset 0 -60px 120px -40px rgba(8,8,11,0.9);
+}
+.hero .art { position: absolute; inset: 0; z-index: -1; overflow: hidden; }
+.hero .art svg, .hero .art .cover-fill svg { width: 100%; height: 100%; display: block; }
+/* Slow ambient push-in — cinematic life without distraction. */
+.hero .art .cover-fill { animation: heroZoom 22s ease-in-out infinite alternate; transform-origin: 60% 40%; }
+@keyframes heroZoom { from { transform: scale(1.02); } to { transform: scale(1.12); } }
 .hero .scrim {
   position: absolute; inset: 0; z-index: -1;
   background:
-    linear-gradient(180deg, rgba(8,8,11,0) 25%, rgba(8,8,11,0.55) 62%, rgba(8,8,11,0.96) 100%),
-    linear-gradient(90deg, rgba(8,8,11,0.7) 0%, rgba(8,8,11,0.1) 55%, transparent 100%);
+    radial-gradient(120% 120% at 78% 18%, rgba(255,90,40,0.16), transparent 46%),
+    linear-gradient(180deg, rgba(8,8,11,0) 20%, rgba(8,8,11,0.6) 60%, rgba(8,8,11,0.97) 100%),
+    linear-gradient(90deg, rgba(8,8,11,0.78) 0%, rgba(8,8,11,0.12) 58%, transparent 100%);
 }
 .hero .hero-inner { padding: clamp(18px, 4vw, 34px); width: 100%; }
 .hero .kicker { display: inline-flex; align-items: center; gap: 10px; font-size: 12px; font-weight: 700; letter-spacing: 0.18em; text-transform: uppercase; color: var(--ember-1); margin-bottom: 10px; }
@@ -139,8 +163,8 @@ body::after {
   transition: transform 0.2s var(--ease), filter 0.2s var(--ease); white-space: nowrap;
 }
 .btn:hover { transform: translateY(-1px); }
-.btn-play { color: #140a06; background: linear-gradient(100deg, var(--ember-1), var(--ember-2)); box-shadow: 0 12px 28px -10px rgba(255, 70, 60, 0.65); }
-.btn-play:hover { filter: brightness(1.05); }
+.btn-play { color: #140a06; background: linear-gradient(100deg, var(--ember-1), var(--ember-2)); box-shadow: 0 14px 34px -10px rgba(255, 70, 60, 0.8), 0 0 0 1px rgba(255,255,255,0.12) inset; }
+.btn-play:hover { filter: brightness(1.06); box-shadow: 0 18px 40px -10px rgba(255, 70, 60, 0.95), 0 0 0 1px rgba(255,255,255,0.18) inset; }
 .btn-ghost { color: var(--ink); background: rgba(255,255,255,0.08); border: 1px solid var(--line-strong); backdrop-filter: blur(6px); }
 .btn-ghost:hover { background: rgba(255,255,255,0.14); }
 .btn svg { width: 16px; height: 16px; }
@@ -176,10 +200,14 @@ body::after {
 
 .card {
   scroll-snap-align: start; flex: none; cursor: pointer; border-radius: var(--radius);
-  overflow: hidden; border: 1px solid var(--line); background: var(--panel); position: relative;
-  transition: transform 0.3s var(--ease), border-color 0.3s var(--ease), box-shadow 0.3s var(--ease);
+  overflow: hidden; border: 1px solid var(--line);
+  background: linear-gradient(180deg, var(--panel-2), var(--panel)); position: relative;
+  transition: transform 0.32s var(--ease), border-color 0.32s var(--ease), box-shadow 0.32s var(--ease);
 }
-.card:hover { transform: translateY(-4px); border-color: var(--line-strong); box-shadow: var(--shadow); }
+.card:hover {
+  transform: translateY(-6px); border-color: rgba(255, 138, 61, 0.45);
+  box-shadow: 0 26px 50px -20px rgba(0,0,0,0.85), 0 0 0 1px rgba(255,138,61,0.18), 0 14px 40px -18px rgba(255,70,60,0.35);
+}
 .card .art { position: relative; overflow: hidden; }
 .card .art svg { display: block; width: 100%; height: 100%; transition: transform 0.4s var(--ease); }
 .card:hover .art svg { transform: scale(1.06); }

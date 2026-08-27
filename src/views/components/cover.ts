@@ -8,9 +8,19 @@ export function escapeHtml(s: string): string {
   return s.replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]!));
 }
 
-export function coverArt(c: Cover, glyph = ""): string {
+// A fixed, deterministic particle scatter — a faint star/ember field that gives
+// every frame ambient texture and keeps a wide hero crop from reading as empty.
+const DOTS: [number, number, number, number][] = [
+  [40, 60, 2.2, 0.5], [82, 28, 1.3, 0.32], [128, 78, 1.7, 0.4], [201, 48, 2.6, 0.5],
+  [251, 100, 1.5, 0.3], [281, 158, 2.0, 0.45], [30, 150, 1.5, 0.34], [61, 240, 2.2, 0.4],
+  [110, 201, 1.3, 0.3], [171, 262, 1.7, 0.4], [231, 221, 2.4, 0.46], [272, 271, 1.5, 0.3],
+  [151, 40, 1.5, 0.34], [211, 150, 1.3, 0.3], [100, 121, 1.1, 0.24], [242, 182, 1.7, 0.4],
+];
+
+export function coverArt(c: Cover, glyph = "", opts: { hero?: boolean } = {}): string {
   const id = `m${UID++}`;
   const a = c.accent;
+  const hero = !!opts.hero;
   const scenes: Record<Motif, string> = {
     court: `
       <path d="M0 210 H300" stroke="${a}" stroke-width="2" opacity=".5"/>
@@ -66,6 +76,15 @@ export function coverArt(c: Cover, glyph = ""): string {
       <circle cx="210" cy="0" r="8" fill="${a}"/>
       <rect x="0" y="280" width="300" height="20" fill="${a}" opacity=".5"/>`,
   };
+  const scene = scenes[c.motif] ?? "";
+  // In the hero the 300×300 art is sliced into a wide frame; scaling the motif
+  // up from centre fills more of it and reads as a composed still, not a chip.
+  const sceneLayer = hero
+    ? `<g transform="translate(150 150) scale(1.45) translate(-150 -150)">${scene}</g>`
+    : scene;
+  const particles = DOTS.map(([x, y, r, o]) => `<circle cx="${x}" cy="${y}" r="${r}" fill="${a}" opacity="${hero ? o * 0.85 : o}"/>`).join("");
+  const glyphOp = hero ? 0.045 : 0.05;
+
   return `
   <svg viewBox="0 0 300 300" preserveAspectRatio="xMidYMid slice" xmlns="http://www.w3.org/2000/svg">
     <defs>
@@ -75,13 +94,24 @@ export function coverArt(c: Cover, glyph = ""): string {
       <radialGradient id="sun${id}" cx="0.5" cy="0.4" r="0.6">
         <stop offset="0" stop-color="#fff" stop-opacity=".55"/><stop offset="1" stop-color="${c.accent}" stop-opacity="0"/>
       </radialGradient>
+      <radialGradient id="glow${id}" cx="0.8" cy="0.22" r="0.75">
+        <stop offset="0" stop-color="${a}" stop-opacity="${hero ? ".5" : ".4"}"/><stop offset="1" stop-color="${a}" stop-opacity="0"/>
+      </radialGradient>
+      <linearGradient id="lb${id}" x1="0" y1="0" x2="1" y2="1">
+        <stop offset=".32" stop-color="#fff" stop-opacity="0"/>
+        <stop offset=".5" stop-color="#fff" stop-opacity="${hero ? ".09" : ".06"}"/>
+        <stop offset=".68" stop-color="#fff" stop-opacity="0"/>
+      </linearGradient>
       <radialGradient id="vig${id}" cx="0.5" cy="0.35" r="0.9">
         <stop offset="0.55" stop-color="#000" stop-opacity="0"/><stop offset="1" stop-color="#000" stop-opacity=".55"/>
       </radialGradient>
     </defs>
     <rect width="300" height="300" fill="url(#bg${id})"/>
-    ${scenes[c.motif] ?? ""}
-    ${glyph ? `<text x="288" y="292" text-anchor="end" font-family="Big Shoulders Display, sans-serif" font-weight="900" font-size="190" fill="#fff" opacity=".06">${escapeHtml(glyph)}</text>` : ""}
+    <rect width="300" height="300" fill="url(#glow${id})"/>
+    <g>${particles}</g>
+    ${sceneLayer}
+    <rect width="300" height="300" fill="url(#lb${id})"/>
+    ${glyph ? `<text x="288" y="292" text-anchor="end" font-family="Big Shoulders Display, sans-serif" font-weight="900" font-size="190" fill="#fff" opacity="${glyphOp}">${escapeHtml(glyph)}</text>` : ""}
     <rect width="300" height="300" fill="url(#vig${id})"/>
   </svg>`;
 }

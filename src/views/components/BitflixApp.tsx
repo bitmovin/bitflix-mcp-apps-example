@@ -26,10 +26,23 @@ function Badges({ items }: { items: string[] }) {
   );
 }
 
+function LiveClock() {
+  const [now, setNow] = useState(() => new Date());
+  useEffect(() => {
+    const id = setInterval(() => setNow(new Date()), 1000);
+    return () => clearInterval(id);
+  }, []);
+  const p = (n: number) => String(n).padStart(2, "0");
+  return <span className="onair-time">{p(now.getHours())}:{p(now.getMinutes())}:{p(now.getSeconds())}</span>;
+}
+
 function Topbar({ brand, prompt }: { brand: Brand; prompt?: string }) {
   return (
     <div className="topbar">
       <div className="wordmark">{brand.wordmark}<span className="dot">.</span></div>
+      <div className="onair" aria-label="On air" title="Bitflix is broadcasting">
+        <span className="onair-dot" />ON AIR<LiveClock />
+      </div>
       <div className="spacer" />
       {prompt ? <div className="prompt-chip"><span className="mic" />{`“${prompt}”`}</div> : null}
     </div>
@@ -81,7 +94,7 @@ function Hero({ p, onPlay }: { p: BrowsePayload; onPlay: (t: Title) => void }) {
   if (!t) return null;
   return (
     <div className="hero reveal" onClick={() => onPlay(t)}>
-      <div className="art"><div className="cover-fill" dangerouslySetInnerHTML={{ __html: coverArt(t.cover, t.title.charAt(0)) }} /></div>
+      <div className="art"><div className="cover-fill" dangerouslySetInnerHTML={{ __html: coverArt(t.cover, t.title.charAt(0), { hero: true }) }} /></div>
       <div className="scrim" />
       <div className="hero-inner">
         <div className="kicker">{t.kicker}</div>

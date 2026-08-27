@@ -68,7 +68,10 @@ export function BitmovinPlayer({
 
     player = new BitmovinPlayerSDK(node, {
       key: licenseKey,
-      playback: { autoplay: true, muted: true },
+      // Autoplay is triggered manually after load() (see below) so the play()
+      // promise is caught — config autoplay leaves an uncaught rejection when
+      // the browser blocks it.
+      playback: { autoplay: false, muted: true },
       ui: false,
       // Real Google Cast via the player's remote-control module (loads the Cast
       // sender SDK from gstatic). In an MCP host sandbox this typically finds no
@@ -105,10 +108,21 @@ export function BitmovinPlayer({
     const timeout = new Promise<never>((_, rej) =>
       setTimeout(() => rej(new Error("player.load() timeout after 30s")), 30000),
     );
-    Promise.race([player.load(source), timeout]).catch((e: any) => {
-      const detail = e instanceof Error ? e.message : String(e);
-      if (!cancelled) { setError(detail); onStatus?.({ state: "error", detail }); }
-    });
+    Promise.race([player.load(source), timeout])
+      .then(() => {
+        // Start muted playback ourselves so the play() promise is ours to catch.
+        // Bitmovin's play() may return void, so wrap it — this catches the
+        // rejection where the browser hands one back. (In a sandbox that blocks
+        // even muted autoplay, e.g. the local dev playground, the underlying
+        // media element can still reject internally; that's benign and does not
+        // occur in a host that permits muted autoplay.)
+        if (cancelled) return;
+        try { Promise.resolve(player.play?.()).catch(() => {}); } catch { /* ignore */ }
+      })
+      .catch((e: any) => {
+        const detail = e instanceof Error ? e.message : String(e);
+        if (!cancelled) { setError(detail); onStatus?.({ state: "error", detail }); }
+      });
 
     return () => {
       cancelled = true;
