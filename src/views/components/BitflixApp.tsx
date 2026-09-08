@@ -3,7 +3,9 @@ import { useDisplayMode } from "skybridge/web";
 import { BRAND, type Brand, type BrowsePayload, type PlayerPayload, type Title } from "../../catalog.js";
 import { useCallTool } from "../../helpers.js";
 import { useAutoHeight } from "../hooks.js";
-import { BitmovinPlayer, type CastState } from "./BitmovinPlayer.js";
+import type { PlayerAPI } from "bitmovin-player";
+import type { CastState } from "./BitmovinPlayer.js";
+import { BitmovinPlayerLazy } from "./BitmovinPlayerLazy.js";
 import { ICON, coverArt } from "./cover.js";
 import "@/index.css";
 
@@ -173,7 +175,7 @@ function BrowseView({ p, onPlay, onChip, activeKey }: { p: BrowsePayload; onPlay
 
 function PlayerView({ p, onBack, onPlay }: { p: PlayerPayload; onBack: () => void; onPlay: (t: Title) => void }) {
   const [displayMode, setDisplayMode] = useDisplayMode();
-  const playerRef = useRef<any>(null);
+  const playerRef = useRef<PlayerAPI | null>(null);
   const rootRef = useRef<HTMLDivElement>(null);
   const [cast, setCast] = useState<CastState>({ available: false, casting: false });
   const t = p.title;
@@ -190,7 +192,7 @@ function PlayerView({ p, onBack, onPlay }: { p: PlayerPayload; onBack: () => voi
     if (!pl) return;
     // Real Bitmovin Player Google Cast API — castVideo() opens the browser's
     // native Cast device chooser; no fake device list.
-    try { if (cast.casting) pl.stopCast?.(); else pl.castVideo?.(); } catch { /* ignore */ }
+    try { if (cast.casting) pl.castStop(); else pl.castVideo(); } catch { /* ignore */ }
   };
 
   return (
@@ -198,7 +200,7 @@ function PlayerView({ p, onBack, onPlay }: { p: PlayerPayload; onBack: () => voi
       <div className="player-view">
         <Topbar brand={p.brand} />
         <div className="player-shell">
-          <BitmovinPlayer
+          <BitmovinPlayerLazy
             title={t}
             licenseKey={p.licenseKey}
             onPlayerReady={(pl) => { playerRef.current = pl; }}

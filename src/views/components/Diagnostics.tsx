@@ -2,7 +2,8 @@ import { useEffect, useRef, useState } from "react";
 import { useDisplayMode } from "skybridge/web";
 import type { Brand, Title } from "../../catalog.js";
 import { useAutoHeight } from "../hooks.js";
-import { BitmovinPlayer, type PlayerStatus } from "./BitmovinPlayer.js";
+import type { PlayerStatus } from "./BitmovinPlayer.js";
+import { BitmovinPlayerLazy } from "./BitmovinPlayerLazy.js";
 import { ICON } from "./cover.js";
 import "@/index.css";
 
@@ -257,7 +258,7 @@ export function Diagnostics({ payload }: { payload?: DiagPayload }) {
         {drmPlay ? (
           <div style={{ marginTop: 12 }}>
             <div className="player-shell">
-              <BitmovinPlayer title={drmPlay} licenseKey={licenseKey} onStatus={(s) => setDrmStatus((m) => ({ ...m, [drmPlay.id]: s }))} />
+              <BitmovinPlayerLazy title={drmPlay} licenseKey={licenseKey} onStatus={(s) => setDrmStatus((m) => ({ ...m, [drmPlay.id]: s }))} />
             </div>
             {drmStatus[drmPlay.id]?.state === "error" ? (
               <div className="diag-detail" style={{ marginTop: 8 }}>{drmStatus[drmPlay.id] && "detail" in drmStatus[drmPlay.id]! ? (drmStatus[drmPlay.id] as { detail: string }).detail : ""}</div>

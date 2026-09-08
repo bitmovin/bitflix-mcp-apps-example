@@ -1,28 +1,14 @@
 import { useEffect, useRef, useState } from "react";
-import * as playerModule from "bitmovin-player/bitmovinplayer.prod.js";
-import * as playerUiModule from "bitmovin-player/bitmovinplayer-ui.js";
-import "bitmovin-player/bitmovinplayer-ui.css";
+import { Player, PlayerEvent, type PlayerAPI, type SourceConfig } from "bitmovin-player";
+import { UIFactory } from "bitmovin-player-ui";
+import "bitmovin-player-ui/dist/css/bitmovinplayer-ui.css";
 import type { Title } from "../../catalog.js";
-
-/* eslint-disable @typescript-eslint/no-explicit-any */
-// Bitmovin Player + UI ship as UMD bundles that register on window.bitmovin
-// when script-loaded. Bundled as ESM the globals aren't set, so re-register.
-const playerExports: any = (playerModule as any).default ?? playerModule;
-const uiExports: any = (playerUiModule as any).default ?? playerUiModule;
-const BitmovinPlayerSDK: any = playerExports.Player ?? playerExports;
-const UIFactory: any = uiExports.UIFactory;
-if (typeof window !== "undefined") {
-  (window as any).bitmovin = (window as any).bitmovin || {};
-  (window as any).bitmovin.player = (window as any).bitmovin.player || playerExports;
-  (window as any).bitmovin.playerui = (window as any).bitmovin.playerui || uiExports;
-}
 
 /**
  * Mounts the Bitmovin Player into a ref'd node that React leaves alone (the
  * player appends its own DOM). The loading / error overlays are siblings React
  * controls. Streams are fetched directly — the view CSP allow-lists every
- * origin in our catalog (Bitmovin CDN, the live-sim, S3) and they send CORS, so
- * no MCP segment proxy is needed.
+ * origin in our catalog and they send CORS, so no MCP segment proxy is needed.
  */
 export type PlayerStatus =
   | { state: "loading" }
@@ -31,34 +17,25 @@ export type PlayerStatus =
 
 export type CastState = { available: boolean; casting: boolean; device?: string };
 
-export function BitmovinPlayer({
-  title,
-  licenseKey,
-  onStatus,
-  onPlayerReady,
-  onCast,
-}: {
+export interface BitmovinPlayerProps {
   title: Title;
   licenseKey: string;
   onStatus?: (s: PlayerStatus) => void;
-  onPlayerReady?: (player: any) => void;
+  onPlayerReady?: (player: PlayerAPI) => void;
   onCast?: (s: CastState) => void;
-}) {
+}
+
+export function BitmovinPlayer({ title, licenseKey, onStatus, onPlayerReady, onCast }: BitmovinPlayerProps) {
   const mountRef = useRef<HTMLDivElement>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    let player: any = null;
     let cancelled = false;
     setLoading(true);
     setError(null);
     onStatus?.({ state: "loading" });
 
-    if (!BitmovinPlayerSDK) {
-      setError("Bitmovin Player SDK not loaded");
-      return;
-    }
     const node = mountRef.current;
     if (!node) return;
     // Clear leftover player DOM. React 19 StrictMode double-invokes effects in
@@ -66,7 +43,7 @@ export function BitmovinPlayer({
     // empty black element on top of the live one.
     node.replaceChildren();
 
-    player = new BitmovinPlayerSDK(node, {
+    const player: PlayerAPI = new Player(node, {
       key: licenseKey,
       // Autoplay is triggered manually after load() (see below) so the play()
       // promise is caught — config autoplay leaves an uncaught rejection when
@@ -78,29 +55,31 @@ export function BitmovinPlayer({
       // receiver / can't initialize — that unavailability is the actual signal.
       remotecontrol: { type: "googlecast", receiverApplicationId: "CC1AD845" },
     });
-    if (UIFactory) UIFactory.buildUI(player);
+    UIFactory.buildUI(player);
 
     const reportCast = (device?: string) => {
       if (cancelled) return;
-      try { onCast?.({ available: !!player?.isCastAvailable?.(), casting: !!player?.isCasting?.(), device }); } catch { /* ignore */ }
+      try { onCast?.({ available: player.isCastAvailable(), casting: player.isCasting(), device }); } catch { /* ignore */ }
     };
-    player.on("ready", () => {
+    player.on(PlayerEvent.Ready, () => {
       if (cancelled) return;
       setLoading(false);
       onStatus?.({ state: "ready" });
       onPlayerReady?.(player);
       reportCast();
     });
-    player.on("error", (e: any) => {
-      const detail = `Error ${e?.code ?? "?"}: ${e?.message ?? "playback failed"}`;
+    player.on(PlayerEvent.Error, (e) => {
+      const detail = `Error ${e.code}: ${e.message ?? "playback failed"}`;
       if (!cancelled) { setError(detail); onStatus?.({ state: "error", detail }); }
     });
     // Real cast lifecycle from the player's Cast module.
-    for (const ev of ["castavailable", "caststart", "caststarted", "caststopped", "castwaitingfordevice"]) {
-      player.on(ev, (e: any) => reportCast(e?.deviceName));
-    }
+    player.on(PlayerEvent.CastAvailable, () => reportCast());
+    player.on(PlayerEvent.CastStart, () => reportCast());
+    player.on(PlayerEvent.CastStarted, (e) => reportCast(e.deviceName));
+    player.on(PlayerEvent.CastStopped, () => reportCast());
+    player.on(PlayerEvent.CastWaitingForDevice, (e) => reportCast(e.castPayload.deviceName));
 
-    const source: any = { title: title.title };
+    const source: SourceConfig = { title: title.title };
     if (title.stream.type === "hls") source.hls = title.stream.url;
     else source.dash = title.stream.url;
     if (title.sourceConfig) Object.assign(source, title.sourceConfig);
@@ -111,22 +90,19 @@ export function BitmovinPlayer({
     Promise.race([player.load(source), timeout])
       .then(() => {
         // Start muted playback ourselves so the play() promise is ours to catch.
-        // Bitmovin's play() may return void, so wrap it — this catches the
-        // rejection where the browser hands one back. (In a sandbox that blocks
-        // even muted autoplay, e.g. the local dev playground, the underlying
-        // media element can still reject internally; that's benign and does not
-        // occur in a host that permits muted autoplay.)
+        // In a sandbox that blocks even muted autoplay (e.g. the local dev
+        // playground) the rejection is benign; the user can press play.
         if (cancelled) return;
-        try { Promise.resolve(player.play?.()).catch(() => {}); } catch { /* ignore */ }
+        player.play().catch(() => { /* ignore */ });
       })
-      .catch((e: any) => {
+      .catch((e: unknown) => {
         const detail = e instanceof Error ? e.message : String(e);
         if (!cancelled) { setError(detail); onStatus?.({ state: "error", detail }); }
       });
 
     return () => {
       cancelled = true;
-      try { player?.destroy(); } catch { /* ignore */ }
+      try { player.destroy().catch(() => {}); } catch { /* ignore */ }
       try { node.replaceChildren(); } catch { /* ignore */ }
     };
   }, [title.id, title.stream.url, licenseKey]);
