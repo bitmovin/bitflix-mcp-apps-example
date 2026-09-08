@@ -12,7 +12,7 @@ type DiagPayload = { view: "diagnostics"; brand: Brand; drmTitles: Title[]; lice
 type Status = "yes" | "no" | "partial" | "pending" | "unknown";
 type Row = { key: string; label: string; status: Status; detail?: string };
 
-const Ico = ({ html }: { html: string }) => <span dangerouslySetInnerHTML={{ __html: html }} />;
+const Ico = ({ html }: { html: string }) => <span aria-hidden="true" dangerouslySetInnerHTML={{ __html: html }} />;
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
 // ── probes ──────────────────────────────────────────────────────────────────

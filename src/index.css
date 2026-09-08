@@ -346,7 +346,7 @@ body::after {
 
 /* Visible keyboard focus on every interactive surface. */
 .chip:focus-visible, .btn:focus-visible, .card:focus-visible, .iconbtn:focus-visible,
-.device:focus-visible, .hero:focus-visible {
+.device:focus-visible {
   outline: 2px solid var(--signal); outline-offset: 3px; border-radius: 10px;
 }
 .card:focus-visible { outline: none; border-radius: var(--radius); }

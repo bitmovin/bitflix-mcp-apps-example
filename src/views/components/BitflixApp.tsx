@@ -12,7 +12,7 @@ import "@/index.css";
 type Rail = { id: string; title: string; subtitle?: string; layout?: string; items: Title[] };
 type Payload = BrowsePayload | PlayerPayload;
 
-const Ico = ({ html }: { html: string }) => <span dangerouslySetInnerHTML={{ __html: html }} />;
+const Ico = ({ html }: { html: string }) => <span aria-hidden="true" dangerouslySetInnerHTML={{ __html: html }} />;
 
 // ── small pieces ───────────────────────────────────────────────────────────
 function FooterNote({ brand }: { brand: Brand }) {
@@ -62,10 +62,28 @@ function Topbar({ brand, prompt }: { brand: Brand; prompt?: string }) {
 
 function Card({ t, layout, onPlay }: { t: Title; layout: string; onPlay: (t: Title) => void }) {
   return (
-    <div className="card" role="button" tabIndex={0} onClick={() => onPlay(t)}>
+    <div
+      className="card"
+      role="button"
+      tabIndex={0}
+      onClick={() => onPlay(t)}
+      onKeyDown={(e) => {
+        // Match a real button's key activation, which a button role does not grant:
+        // Enter fires on press, Space on release.
+        if (e.key === "Enter") {
+          e.preventDefault();
+          onPlay(t);
+        } else if (e.key === " ") {
+          e.preventDefault(); // Suppress the view scroll
+        }
+      }}
+      onKeyUp={(e) => {
+        if (e.key === " ") onPlay(t);
+      }}
+    >
       <div className="art">
-        <div className="cover-fill" dangerouslySetInnerHTML={{ __html: coverArt(t.cover, t.title.charAt(0)) }} />
-        <div className="play-overlay"><div className="disc" dangerouslySetInnerHTML={{ __html: ICON.play }} /></div>
+        <div className="cover-fill" aria-hidden="true" dangerouslySetInnerHTML={{ __html: coverArt(t.cover, t.title.charAt(0)) }} />
+        <div className="play-overlay" aria-hidden="true"><div className="disc" dangerouslySetInnerHTML={{ __html: ICON.play }} /></div>
         <div className="corner">
           {t.badges.includes("LIVE") ? <span className="badge live">LIVE</span> : t.badges.includes("NEW") ? <span className="badge">NEW</span> : null}
         </div>
@@ -105,7 +123,7 @@ function Hero({ p, onPlay }: { p: BrowsePayload; onPlay: (t: Title) => void }) {
   if (!t) return null;
   return (
     <div className="hero reveal" onClick={() => onPlay(t)}>
-      <div className="art"><div className="cover-fill" dangerouslySetInnerHTML={{ __html: coverArt(t.cover, t.title.charAt(0), { hero: true }) }} /></div>
+      <div className="art"><div className="cover-fill" aria-hidden="true" dangerouslySetInnerHTML={{ __html: coverArt(t.cover, t.title.charAt(0), { hero: true }) }} /></div>
       <div className="scrim" />
       <div className="hero-inner">
         <div className="kicker">{t.kicker}</div>
