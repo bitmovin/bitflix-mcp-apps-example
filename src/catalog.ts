@@ -476,6 +476,18 @@ export function getTitle(id: string): Title | undefined {
   return BY_ID.get(id);
 }
 
+/**
+ * Look up a title by id, treating absence as an authoring error.
+ *
+ * Throws and names the id when it is unknown, so a mistyped reference surfaces
+ * immediately instead of dropping an item from the screen.
+ */
+function requireTitle(id: string): Title {
+  const title = BY_ID.get(id);
+  if (!title) throw new Error(`Catalog references unknown title id "${id}"`);
+  return title;
+}
+
 export function liveTitles(): Title[] {
   return TITLES.filter((t) => t.badges.includes("LIVE"));
 }
@@ -553,7 +565,8 @@ export interface BrowsePayload {
   brand: Brand;
   headline: string;
   subhead?: string;
-  featuredId: string;
+  /** Title the hero frame leads with. Absent when the screen has no items. */
+  featuredId?: string;
   sections: { id: string; title: string; subtitle?: string; layout?: string; items: Title[] }[];
   licenseKey: string;
 }
@@ -572,7 +585,7 @@ function hydrate(section: Section) {
     title: section.title,
     subtitle: section.subtitle,
     layout: section.layout,
-    items: section.itemIds.map((id) => BY_ID.get(id)!).filter(Boolean),
+    items: section.itemIds.map((id) => requireTitle(id)),
   };
 }
 
@@ -600,7 +613,7 @@ export function categoryPayload(licenseKey: string, query: string): BrowsePayloa
     brand: BRAND,
     headline: results.length ? `Results for "${query}"` : "Nothing exact — here's what's live",
     subhead: results.length ? `${items.length} title${items.length === 1 ? "" : "s"} in Bitflix` : undefined,
-    featuredId: items[0].id,
+    featuredId: items[0]?.id,
     sections: [
       { id: "results", title: query.replace(/\b\w/g, (m) => m.toUpperCase()), layout: "poster", items },
     ],
@@ -616,7 +629,7 @@ export function livePayload(licenseKey: string): BrowsePayload {
     brand: BRAND,
     headline: "On air right now",
     subhead: `${items.length} live channels across sports and news`,
-    featuredId: items[0].id,
+    featuredId: items[0]?.id,
     sections: [{ id: "live", title: "Live Right Now", layout: "live", items }],
     licenseKey,
   };
@@ -626,23 +639,23 @@ export function livePayload(licenseKey: string): BrowsePayload {
  *  (e.g. "in the mood for something short", "loves basketball"). */
 export function recommendationsPayload(licenseKey: string, context?: string): BrowsePayload {
   const ctx = (context ?? "").toLowerCase();
-  const because = [BY_ID.get("film-aurora")!, BY_ID.get("doc-summit")!]; // continue-watching seed
+  const because = [requireTitle("film-aurora"), requireTitle("doc-summit")]; // continue-watching seed
   // "Because you watched Aurora & The Vertical Mile" → more originals + docs
   const forYou = [
-    BY_ID.get("orig-orbit")!,
-    BY_ID.get("orig-tides")!,
-    BY_ID.get("film-sintel")!,
-    BY_ID.get("orig-encore")!,
+    requireTitle("orig-orbit"),
+    requireTitle("orig-tides"),
+    requireTitle("film-sintel"),
+    requireTitle("orig-encore"),
   ];
   // Bias toward sports if the context mentions it
   if (/(basket|sport|game|nba|dunk)/.test(ctx)) {
-    forYou.unshift(BY_ID.get("live-finals-g6")!, BY_ID.get("game-top10")!);
+    forYou.unshift(requireTitle("live-finals-g6"), requireTitle("game-top10"));
   }
   const newThisWeek = [
-    BY_ID.get("orig-orbit")!,
-    BY_ID.get("game-top10")!,
-    BY_ID.get("news-deepdive")!,
-    BY_ID.get("orig-tides")!,
+    requireTitle("orig-orbit"),
+    requireTitle("game-top10"),
+    requireTitle("news-deepdive"),
+    requireTitle("orig-tides"),
   ];
   return {
     view: "browse",
@@ -651,7 +664,7 @@ export function recommendationsPayload(licenseKey: string, context?: string): Br
     subhead: context
       ? `Because you mentioned: "${context}"`
       : "Based on what you've been watching lately",
-    featuredId: forYou[0].id,
+    featuredId: forYou[0]?.id,
     sections: [
       {
         id: "because",
