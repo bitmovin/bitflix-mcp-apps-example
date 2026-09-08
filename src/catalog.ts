@@ -5,13 +5,12 @@
 // MCP tools query: browse, recommend, what's-live, and play all resolve
 // against the titles below.
 //
-// Every `stream` is a REAL, publicly playable HLS/DASH manifest hosted on an
-// origin already allow-listed by the player widget's CSP (*.bitmovin.com,
-// *.akamaized.net, devstreaming-cdn.apple.com, *.mux.dev) — so the Bitmovin
-// Player actually plays inside the ChatGPT / Claude sandbox. The metadata,
-// titles, scores and cover art are fictional dressing on top: this is what a
-// streaming network ("Bitflix") would expose if it built its catalog as an
-// MCP App instead of a grid of tiles on a TV.
+// Every `stream` is a real, publicly playable HLS/DASH manifest. Their origins
+// must appear in VIEW_CSP (src/server.ts), which decides what the widget
+// sandbox lets the player fetch. The metadata, titles, scores and cover art
+// are fictional dressing on top. This is what a streaming network ("Bitflix")
+// would expose if it built its catalog as an MCP App instead of a grid of
+// tiles on a TV.
 // ─────────────────────────────────────────────────────────────────────────
 
 export type StreamType = "hls" | "dash";
@@ -79,17 +78,13 @@ export interface Section {
 }
 
 // ── Streams ───────────────────────────────────────────────────────────────
-// These are the OFFICIAL Bitmovin test streams recommended by the Bitmovin
-// MCP connector (its `streams://recommended` resource) — the maintained,
-// reliable clear HLS + DASH "Art of Motion" assets. We deliberately use only
-// these so playback works in every MCP host sandbox (no third-party-CDN CORS
-// surprises). Every title below points at one of the two; the metadata,
-// scores and cover art are the fictional dressing on top.
-//
-// The same connector also offers Widevine/PlayReady DRM variants of these
-// assets — see the README for how to wire them via the player's sourceConfig.
-const HLS: Stream = { url: "https://cdn.bitmovin.com/content/assets/art-of-motion-dash-hls-progressive/m3u8s/f08e80da-bf1d-4e3d-8899-f0f6155f6efa.m3u8", type: "hls" };
-const DASH: Stream = { url: "https://cdn.bitmovin.com/content/assets/art-of-motion-dash-hls-progressive/mpds/f08e80da-bf1d-4e3d-8899-f0f6155f6efa.mpd", type: "dash" };
+// The clear HLS and DASH renditions of Bitmovin's "Art of Motion" test asset,
+// as recommended by the Bitmovin MCP connector's `streams://recommended`
+// resource. Titles alternate between the two so both pipelines get exercised.
+// Restricting the catalog to these keeps playback working in every MCP host
+// sandbox, with no third-party-CDN CORS surprises.
+const VOD_HLS: Stream = { url: "https://cdn.bitmovin.com/content/assets/art-of-motion-dash-hls-progressive/m3u8s/f08e80da-bf1d-4e3d-8899-f0f6155f6efa.m3u8", type: "hls" };
+const VOD_DASH: Stream = { url: "https://cdn.bitmovin.com/content/assets/art-of-motion-dash-hls-progressive/mpds/f08e80da-bf1d-4e3d-8899-f0f6155f6efa.mpd", type: "dash" };
 
 // Genuinely-LIVE stream for the "live" titles — a real live edge, not VOD
 // dressed up as live. We use DASH-IF's livesim2, which is fully public: CORS *
@@ -97,7 +92,6 @@ const DASH: Stream = { url: "https://cdn.bitmovin.com/content/assets/art-of-moti
 // (Many live test streams serve their segments from a Referer-locked origin,
 // which 403s from a sandboxed widget; livesim2 has no such restriction.)
 const LIVE_DASH: Stream = { url: "https://livesim2.dashif.org/livesim2/testpic_2s/Manifest.mpd", type: "dash" };
-const LIVE_HLS: Stream = LIVE_DASH;
 
 // ── DRM (protected) test streams ────────────────────────────────────────────
 // The Bitmovin "Art of Motion" DRM asset is multi-DRM (Widevine + PlayReady in
@@ -112,19 +106,6 @@ const LIVE_HLS: Stream = LIVE_DASH;
 const DRM_DASH = "https://cdn.bitmovin.com/content/assets/art-of-motion_drm/mpds/11331.mpd";
 const WIDEVINE_LA = "https://cwip-shaka-proxy.appspot.com/no_auth";
 const PLAYREADY_LA = "https://test.playready.microsoft.com/service/rightsmanager.asmx?PlayRight=1&ContentKey=EAtsIJQPd5pFiRUrV9Layw==";
-
-// Aliased per former content slot. Live slots map to the live streams above;
-// everything else alternates the two clear VOD streams to exercise both pipelines.
-const S = {
-  aomDash: DASH,
-  sintelHls: HLS,
-  sintelDash: DASH,
-  liveAkamai: LIVE_HLS, // live games
-  appleAdv: LIVE_DASH, // live newsroom
-  muxBip: HLS,
-  muxTos: DASH,
-  muxPts: DASH,
-};
 
 // ── Palette helpers — keep covers cohesive with the widget's dark canvas ──
 const EMBER = "#FF6A1A";
@@ -150,7 +131,7 @@ export const TITLES: Title[] = [
     score: "LAS 78 — BOS 74",
     tags: ["basketball", "nba", "sports", "live", "playoffs", "surge", "tide"],
     cover: { from: "#2A0E04", to: "#0B0604", accent: COURT, motif: "court" },
-    stream: S.liveAkamai,
+    stream: LIVE_DASH,
   },
   {
     id: "live-newsroom",
@@ -163,7 +144,7 @@ export const TITLES: Title[] = [
     liveLabel: "On air",
     tags: ["news", "breaking", "world", "markets", "live", "newsroom"],
     cover: { from: "#06121F", to: "#02060B", accent: SIGNAL, motif: "newsroom" },
-    stream: S.appleAdv,
+    stream: LIVE_DASH,
   },
   {
     id: "live-derby",
@@ -177,7 +158,7 @@ export const TITLES: Title[] = [
     score: "HAR 1 — RIV 1",
     tags: ["football", "soccer", "derby", "sports", "live", "premier"],
     cover: { from: "#04140B", to: "#020806", accent: TURF, motif: "pitch" },
-    stream: S.liveAkamai,
+    stream: LIVE_DASH,
   },
 
   // ── CONTINUE WATCHING ────────────────────────────────────────────────────
@@ -195,7 +176,7 @@ export const TITLES: Title[] = [
     progressPct: 42,
     tags: ["film", "drama", "original", "fantasy", "ocean", "award"],
     cover: { from: "#10142E", to: "#04050E", accent: VIOLET, motif: "film" },
-    stream: S.sintelHls,
+    stream: VOD_HLS,
   },
   {
     id: "doc-summit",
@@ -211,7 +192,7 @@ export const TITLES: Title[] = [
     progressPct: 71,
     tags: ["documentary", "nature", "climbing", "mountains", "adventure"],
     cover: { from: "#0A1C24", to: "#03080B", accent: ICEBLUE, motif: "summit" },
-    stream: S.aomDash,
+    stream: VOD_DASH,
   },
 
   // ── TONIGHT'S GAMES / SPORTS ─────────────────────────────────────────────
@@ -226,7 +207,7 @@ export const TITLES: Title[] = [
     durationMin: 142,
     tags: ["basketball", "nba", "replay", "sports", "surge", "kings"],
     cover: { from: "#241004", to: "#0A0603", accent: COURT, motif: "court" },
-    stream: S.muxBip,
+    stream: VOD_HLS,
   },
   {
     id: "game-top10",
@@ -239,7 +220,7 @@ export const TITLES: Title[] = [
     durationMin: 9,
     tags: ["highlights", "basketball", "dunks", "sports", "top10"],
     cover: { from: "#2A1206", to: "#0A0503", accent: EMBER, motif: "court" },
-    stream: S.muxPts,
+    stream: VOD_DASH,
   },
   {
     id: "game-ice-classic",
@@ -253,7 +234,7 @@ export const TITLES: Title[] = [
     score: "FRO 3 — BLD 2 (OT)",
     tags: ["hockey", "sports", "winter", "overtime", "classic"],
     cover: { from: "#08202C", to: "#020708", accent: ICEBLUE, motif: "ice" },
-    stream: S.muxTos,
+    stream: VOD_DASH,
   },
 
   // ── THE NEWSROOM ─────────────────────────────────────────────────────────
@@ -268,7 +249,7 @@ export const TITLES: Title[] = [
     durationMin: 22,
     tags: ["news", "business", "markets", "finance", "economy"],
     cover: { from: "#04161A", to: "#01080A", accent: MINT, motif: "globe" },
-    stream: S.muxBip,
+    stream: VOD_HLS,
   },
   {
     id: "news-world",
@@ -281,7 +262,7 @@ export const TITLES: Title[] = [
     durationMin: 48,
     tags: ["news", "world", "evening", "flagship", "global"],
     cover: { from: "#0A1020", to: "#02040A", accent: ICEBLUE, motif: "globe" },
-    stream: S.appleAdv,
+    stream: VOD_HLS,
   },
   {
     id: "news-deepdive",
@@ -294,7 +275,7 @@ export const TITLES: Title[] = [
     durationMin: 38,
     tags: ["news", "investigation", "documentary", "longform", "exclusive"],
     cover: { from: "#1A0A18", to: "#070207", accent: SIGNAL, motif: "newsroom" },
-    stream: S.muxTos,
+    stream: VOD_DASH,
   },
 
   // ── BITFLIX ORIGINALS ───────────────────────────────────────────────────
@@ -311,7 +292,7 @@ export const TITLES: Title[] = [
     durationMin: 52,
     tags: ["series", "scifi", "original", "space", "thriller", "drama"],
     cover: { from: "#0B0A2A", to: "#030210", accent: VIOLET, motif: "orbit" },
-    stream: S.sintelDash,
+    stream: VOD_DASH,
   },
   {
     id: "orig-encore",
@@ -326,7 +307,7 @@ export const TITLES: Title[] = [
     durationMin: 47,
     tags: ["series", "music", "drama", "original", "comedy", "award"],
     cover: { from: "#241608", to: "#0A0703", accent: GOLD, motif: "stage" },
-    stream: S.muxBip,
+    stream: VOD_HLS,
   },
   {
     id: "orig-tides",
@@ -341,7 +322,7 @@ export const TITLES: Title[] = [
     durationMin: 55,
     tags: ["series", "crime", "thriller", "original", "mystery"],
     cover: { from: "#02161C", to: "#010708", accent: MINT, motif: "summit" },
-    stream: S.muxTos,
+    stream: VOD_DASH,
   },
 
   // ── FILMS WE LOVE ─────────────────────────────────────────────────────────
@@ -358,7 +339,7 @@ export const TITLES: Title[] = [
     durationMin: 12,
     tags: ["film", "scifi", "action", "classic", "robots"],
     cover: { from: "#1C0A06", to: "#070302", accent: EMBER, motif: "film" },
-    stream: S.muxTos,
+    stream: VOD_DASH,
   },
   {
     id: "film-sintel",
@@ -373,7 +354,7 @@ export const TITLES: Title[] = [
     durationMin: 15,
     tags: ["film", "animation", "fantasy", "adventure", "classic"],
     cover: { from: "#221608", to: "#080502", accent: GOLD, motif: "summit" },
-    stream: S.sintelHls,
+    stream: VOD_HLS,
   },
   {
     id: "film-motion",
@@ -388,7 +369,7 @@ export const TITLES: Title[] = [
     durationMin: 4,
     tags: ["film", "action", "parkour", "sports", "showcase"],
     cover: { from: "#0A1A1E", to: "#030708", accent: MINT, motif: "stage" },
-    stream: S.aomDash,
+    stream: VOD_DASH,
   },
 
   // ── DRM LAB (protected — probes which CDM the MCP host's sandbox exposes) ──
@@ -639,9 +620,10 @@ export function livePayload(licenseKey: string): BrowsePayload {
  *  (e.g. "in the mood for something short", "loves basketball"). */
 export function recommendationsPayload(licenseKey: string, context?: string): BrowsePayload {
   const ctx = (context ?? "").toLowerCase();
-  const because = [requireTitle("film-aurora"), requireTitle("doc-summit")]; // continue-watching seed
-  // "Because you watched Aurora & The Vertical Mile" → more originals + docs
-  const forYou = [
+  // The titles the recommendations are pitched as following from.
+  const continueWatching = [requireTitle("film-aurora"), requireTitle("doc-summit")];
+  // What watching Aurora and The Vertical Mile leads to: more originals + docs.
+  const becauseYouWatched = [
     requireTitle("orig-orbit"),
     requireTitle("orig-tides"),
     requireTitle("film-sintel"),
@@ -649,7 +631,7 @@ export function recommendationsPayload(licenseKey: string, context?: string): Br
   ];
   // Bias toward sports if the context mentions it
   if (/(basket|sport|game|nba|dunk)/.test(ctx)) {
-    forYou.unshift(requireTitle("live-finals-g6"), requireTitle("game-top10"));
+    becauseYouWatched.unshift(requireTitle("live-finals-g6"), requireTitle("game-top10"));
   }
   const newThisWeek = [
     requireTitle("orig-orbit"),
@@ -664,19 +646,19 @@ export function recommendationsPayload(licenseKey: string, context?: string): Br
     subhead: context
       ? `Because you mentioned: "${context}"`
       : "Based on what you've been watching lately",
-    featuredId: forYou[0]?.id,
+    featuredId: becauseYouWatched[0]?.id,
     sections: [
       {
         id: "because",
         title: "Because you watched Aurora",
         layout: "wide",
-        items: forYou,
+        items: becauseYouWatched,
       },
       {
         id: "continue",
         title: "Pick up where you left off",
         layout: "wide",
-        items: because,
+        items: continueWatching,
       },
       {
         id: "new",
