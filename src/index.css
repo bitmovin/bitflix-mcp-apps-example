@@ -192,7 +192,7 @@ body::after {
 .rail-head .sub { color: var(--ink-faint); font-size: 12.5px; }
 .track {
   display: flex; gap: 14px; overflow-x: auto; scroll-snap-type: x mandatory;
-  padding: 4px 2px 12px; margin: -4px -2px 0;
+  padding: 12px 2px 12px; margin: -12px -2px 0;
   scrollbar-width: thin; scrollbar-color: var(--line-strong) transparent;
 }
 .track::-webkit-scrollbar { height: 6px; }
@@ -348,6 +348,11 @@ body::after {
 .chip:focus-visible, .btn:focus-visible, .card:focus-visible, .iconbtn:focus-visible,
 .device:focus-visible, .hero:focus-visible {
   outline: 2px solid var(--signal); outline-offset: 3px; border-radius: 10px;
+}
+.card:focus-visible { outline: none; border-radius: var(--radius); }
+.card:focus-visible::after {
+  content: ""; position: absolute; inset: 0; z-index: 3; pointer-events: none;
+  border: 2px solid var(--signal); border-radius: calc(var(--radius) - 1px);
 }
 
 /* Respect reduced motion: keep everything, drop the movement. */
