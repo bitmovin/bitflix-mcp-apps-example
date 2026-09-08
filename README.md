@@ -1,39 +1,42 @@
 # Bitflix — a streaming service that lives inside the chat
 
 **Bitflix is a fictional streaming network (sports · news · films · originals) shipped as an
-[MCP App](https://modelcontextprotocol.io). You open it, browse it, get recommendations, and
-watch — by talking to ChatGPT or Claude.** Playback is the
+[MCP App](https://modelcontextprotocol.io).**
+
+You open it, browse it, get recommendations, and watch — by talking to ChatGPT or Claude. It's a reference implementation, and a working answer to:
+
+> *What does an online video platform need to be when the "app" is a conversation and the UI is generated on the fly?*
+
+Bitflix is built on the [Skybridge](https://github.com/alpic-ai/skybridge) React framework for MCP Apps,
+so you can run it in the local playground, expose it through a dev tunnel, or deploy it to a permanent URL.
+Video playback is handled by the
 [Bitmovin Player](https://bitmovin.com/video-player/), embedded directly in the chat widget.
 
-It's a demo/reference implementation, and a working answer to: *what does an online video
-platform need to be when the "app" is a conversation and the UI is generated on the fly?*
-
-Built on the [**Skybridge**](https://github.com/alpic-ai/skybridge) React framework for MCP Apps,
-so it runs in the local playground, behind a dev tunnel, or deployed to a permanent URL.
-
-> ⚠️ **Bring your own Bitmovin Player key.** This repo ships **no** license key. The
-> `bitmovin-player` dependency is a proprietary, commercially-licensed SDK — see
-> [Licensing](#licensing) below.
+> ⚠️ **Bring your own Bitmovin Player key**
+>
+> This repo ships **no** license key. The `bitmovin-player` dependency is a proprietary, commercially-licensed SDK — see [Licensing](#licensing) below.
 
 ## What's in the box
 
 ```
 src/
 ├── catalog.ts          # content: titles, public test streams, sections, search/recommend
-├── server.ts           # McpServer + 5 tools (registerTool), per-view CSP, license-key injection
+├── server.ts           # McpServer + 5 tools (registerTool), view CSP, license-key injection
 ├── env.ts              # typed env (BITMOVIN_PLAYER_KEY)
 ├── helpers.ts          # generateHelpers<AppType>() → typed useToolInfo / useCallTool
-├── index.css           # the cinematic broadcast OTT design system
+├── index.css           # the broadcast OTT design system
 └── views/
     ├── browse.tsx · recommend.tsx · live.tsx · player.tsx · diagnostics.tsx  # one entry per tool
     └── components/
         ├── BitflixApp.tsx      # shared widget: browse + player + cast + chips
         ├── BitmovinPlayer.tsx  # Bitmovin Player in a React component
         ├── Diagnostics.tsx     # video-capability probe for the host sandbox (DRM, fullscreen, cast…)
-        └── cover.ts            # generative per-genre SVG cover art
+        └── cover.ts            # inline SVG cover art, one of nine hand-drawn scenes
 ```
 
-### Tools (each bound to a view via `registerTool({ view: { component } })`)
+### Tools
+
+Each tool the server offers is bound to a view via `registerTool({ view: { component } })`
 
 | Tool | View | Example utterance |
 | --- | --- | --- |
@@ -43,62 +46,65 @@ src/
 | `play_title` | `player` | "play the finals", "resume Aurora" |
 | `run_diagnostics` | `diagnostics` | "test what video features work here" |
 
-The first four render the shared `BitflixApp`, which switches between the browse face and the player
-face on `payload.view`. Tiles are clickable (instant local play, no round-trip); the category chips
+The first four tools render the shared `BitflixApp`, which switches between the browse face and the player
+face via `payload.view`. Tiles are clickable to start playback; the category chips
 call back to the server with `useCallTool`; `data-llm` keeps the model in sync with what's on screen.
 
-`run_diagnostics` renders the `Diagnostics` view instead — a live probe of what the current MCP host's
-widget sandbox actually supports for video: EME/DRM key systems (Widevine, PlayReady, FairPlay,
-ClearKey), MSE, Web Workers, WebAssembly, fullscreen (both the host display-mode request and the native
-Fullscreen API), Picture-in-Picture, casting/Presentation, and autoplay. It's the evidence behind the
-video-in-MCP-Apps feedback, not part of the consumer flow.
+The `run_diagnostics` tool renders the `Diagnostics` view — a live probe of what the current MCP host's
+widget sandbox actually supports for video: MSE, EME/DRM key systems (Widevine, PlayReady, FairPlay, ClearKey), Web Workers, WebAssembly, fullscreen (host display-mode request and native Fullscreen API), Picture-in-Picture, casting/Presentation, and autoplay.
 
-### Content / streams
+### Content / Streams
 
 All streams are **public test assets**, so the demo works out of the box:
 
-- **VOD** plays clear HLS + DASH "Art of Motion" test content on `cdn.bitmovin.com`.
-- **Live** plays [**DASH-IF livesim2**](https://livesim2.dashif.org) — a genuinely-live DASH
-  stream that's fully public (CORS `*`, self-hosted segments), so it plays inside the sandboxed
-  view. (Many live test streams serve segments from a Referer-locked origin that `403`s inside an
-  MCP host sandbox; livesim2 has no such restriction.)
-- Cover art is **generated as per-genre SVG** (court, pitch, globe, film, summit, orbit…) — no
-  external image fetches for the iframe CSP to block.
-- The view CSP (`src/server.ts`) allow-lists `*.bitmovin.com`, `*.dashif.org`, and the Google
-  Fonts origins. Per-title `sourceConfig` is forwarded to the player for DRM/subtitles/poster.
+- **VoD** plays HLS and DASH "Art of Motion" test content from `cdn.bitmovin.com`
+- **Live** plays [**DASH-IF livesim2**](https://livesim2.dashif.org) — a genuinely-live DASH stream that's fully public (CORS `*`, self-hosted segments)
+- Cover art is inline SVG, composed from one of nine hand-drawn scenes (court, pitch, globe, film, summit, orbit…)
+
+> **Content Security Policy:** The app's widget runs in a sandboxed iframe and can only reach origins the server declares up front. Therefore `VIEW_CSP` in `src/server.ts` allow-lists origins hosting the content and any other network-loaded resources. See [CSP & CORS](https://apps.extensions.modelcontextprotocol.io/api/documents/csp-and-cors.html) in the MCP Apps docs for more information.
 
 ## Run it
 
 Requires Node 22+ (Skybridge suggests 24+).
 
 ```bash
-npm install
-cp .env.example .env        # add your own BITMOVIN_PLAYER_KEY
+npm ci
+cp .env.example .env        # create .env file and add your own BITMOVIN_PLAYER_KEY
 npm run dev                 # DevTools playground at http://localhost:3000 — run tools, see views
 ```
 
-- `npm run dev` — local DevTools at `:3000` (run each tool, switch theme/locale/display mode, audit CSP).
-- `npm run dev:tunnel` — same, exposed over a stable tunnel you can add to Claude/ChatGPT.
-- `npm run build` / `npm start` — production build / serve.
-- `npm run deploy` — deploy to [Alpic](https://alpic.ai/) for a permanent HTTPS URL.
+- `npm run dev` — local DevTools playground at port `3000` (run each tool, switch theme/locale/display mode, audit CSP)
+- `npm run dev:tunnel` — same, exposed over a stable tunnel you can add to Claude/ChatGPT
+- `npm run build` / `npm start` — production build / serve
+- `npm run deploy` — deploy to [Alpic](https://alpic.ai/) for a permanent HTTPS URL
 
-> **Player domain allow-listing:** a Bitmovin Player license is locked to specific domains. Make
-> sure your key allow-lists whatever host serves the widget — the MCP host's sandbox domain
-> (e.g. `*.claudemcpcontent.com`, `*.oaiusercontent.com`), your tunnel domain, or your deploy host.
+> **Player domain allow-listing:** A Bitmovin Player license is locked to specific domains. Make sure your license key in the [Bitmovin dashboard](https://dashboard.bitmovin.com/player/licenses) allow-lists whatever host serves the widget — the MCP host's sandbox domain (e.g. `*.claudemcpcontent.com`, `*.oaiusercontent.com`), your tunnel domain, or your deploy host.
 
 ### Connect to Claude / ChatGPT
 
-Run `npm run dev:tunnel` (or deploy), then add the resulting HTTPS `/mcp` URL as a custom
-connector. Then: *"open Bitflix"*, *"what's live?"*, *"recommend something short"*, *"play the
+Run `npm run dev:tunnel` (or deploy), then add the resulting HTTPS URL (ending with `/mcp`) as a custom connector in Claude/ChatGPT. Then open a chat and write *"open Bitflix"*, *"what's live?"*, *"recommend something short"*, *"play the
 finals"*, *"cast it to the living room TV."*
+
+## Limitations
+
+Video capabilities inside a widget sandbox are decided by the MCP host (Claude, ChatGPT), and they vary
+between hosts and change as they evolve. Expect these features to behave differently, or not work at
+all, depending on where you run it:
+
+- Fullscreen
+- Remote Playback (Google Cast and Apple AirPlay)
+- Picture-in-Picture
+- Autoplay with sound
+- DRM
+
+Run tool `run_diagnostics` in your host to see what it actually permits.
 
 ## Making it real (what a production OVP would change)
 
 1. Back `catalog.ts` with a real CMS/MAM + entitlements.
 2. Replace `recommendationsPayload` with a real personalization service.
 3. Real DRM (Widevine/FairPlay/PlayReady) + per-session tokens via the player `sourceConfig`.
-4. Real casting (Google Cast / AirPlay) in place of the simulated handoff.
-5. Bitmovin Analytics in the player config for QoE/engagement.
+4. Bitmovin Analytics in the player config for QoE/engagement.
 
 ## Licensing
 
@@ -106,7 +112,7 @@ The source code in this repository is released under the [MIT License](./LICENSE
 
 **The Bitmovin Player SDK is not.** The `bitmovin-player` npm dependency is proprietary and
 commercially licensed by Bitmovin. To run this app you must obtain your **own** Bitmovin Player
-license key (https://bitmovin.com/dashboard) and comply with the
+license key from the [Bitmovin dashboard](https://dashboard.bitmovin.com/player/licenses) and comply with the
 [Bitmovin Player license terms](https://bitmovin.com/player-license/). No key is included here.
 
 Streams referenced in the catalog are third-party public test assets, used for demonstration only.

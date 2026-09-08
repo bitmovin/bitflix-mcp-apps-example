@@ -1,8 +1,9 @@
 # Contributing to Bitflix
 
-Thanks for your interest! Bitflix is a demo/reference MCP App — a "streaming
-service inside the chat" built on [Skybridge](https://github.com/alpic-ai/skybridge)
-with the [Bitmovin Player](https://bitmovin.com/video-player/).
+Thanks for your interest! Bitflix is a reference implementation for video in MCP
+Apps — a "streaming service inside the chat" built on
+[Skybridge](https://github.com/alpic-ai/skybridge) with the
+[Bitmovin Player](https://bitmovin.com/video-player/).
 
 ## Getting started
 
