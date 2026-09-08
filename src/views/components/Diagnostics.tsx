@@ -263,7 +263,6 @@ export function Diagnostics({ payload }: { payload?: DiagPayload }) {
         ) : null}
       </div>
 
-      <div className="footer-note"><b>Bitflix</b> diagnostics · probing MCP-host video support · powered by <b>Bitmovin Player</b></div>
       <div data-llm="" style={{ display: "none" }}>{summarize()}</div>
     </div>
   );

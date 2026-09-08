@@ -12,6 +12,14 @@ type Payload = BrowsePayload | PlayerPayload;
 const Ico = ({ html }: { html: string }) => <span dangerouslySetInnerHTML={{ __html: html }} />;
 
 // ── small pieces ───────────────────────────────────────────────────────────
+function FooterNote({ brand }: { brand: Brand }) {
+  return (
+    <div className="footer-note">
+      <b>{brand.name}</b> — a streaming service inside the chat · video by <b>Bitmovin Player</b>
+    </div>
+  );
+}
+
 function Badges({ items }: { items: string[] }) {
   return (
     <span className="badges">
@@ -151,7 +159,7 @@ function BrowseView({ p, onPlay, onChip, activeKey }: { p: BrowsePayload; onPlay
       </div>
       <Hero p={p} onPlay={onPlay} />
       {p.sections.map((s) => <RailRow key={s.id} section={s as Rail} onPlay={onPlay} />)}
-      <div className="footer-note"><b>Bitflix</b> — a streaming OVP as an MCP App · video by <b>Bitmovin Player</b></div>
+      <FooterNote brand={p.brand} />
       <div data-llm="" style={{ display: "none" }}>
         {`Bitflix is open on "${p.headline}". Rails: ${p.sections.map((s) => s.title).join(", ")}. The user can play any title or ask for more.`}
       </div>
@@ -215,13 +223,7 @@ function PlayerView({ p, onBack, onPlay }: { p: PlayerPayload; onBack: () => voi
           </div>
         </div>
         {p.upNext?.length ? <RailRow section={{ id: "upnext", title: "Up Next", layout: "wide", items: p.upNext }} onPlay={onPlay} /> : null}
-        <div className="footer-note">
-          {cast.casting
-            ? <>Casting via Google Cast to <b>{cast.device || "a Cast device"}</b> · this device is now the remote</>
-            : cast.available
-              ? <>A Google Cast receiver is available — tap <b>Cast to TV</b></>
-              : <>Real Google Cast: <b>no receiver available in this host</b> — the widget sandbox blocks the Cast / Presentation APIs</>}
-        </div>
+        <FooterNote brand={p.brand} />
       </div>
       <div data-llm="" style={{ display: "none" }}>
         {`The user is watching "${t.title}" (${t.kicker}) in the Bitflix player${cast.casting ? `, cast via Google Cast to ${cast.device || "a device"} (this device is now a remote)` : cast.available ? " on this device (a Google Cast receiver is available)" : " on this device (no Google Cast receiver available in this MCP host sandbox)"}.${t.score ? ` Score: ${t.score}.` : ""} Up next: ${p.upNext.map((u) => u.title).join(", ")}.`}
