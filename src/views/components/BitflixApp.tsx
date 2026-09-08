@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { useDisplayMode } from "skybridge/web";
 import { BRAND, type Brand, type BrowsePayload, type PlayerPayload, type Title } from "../../catalog.js";
 import { useCallTool } from "../../helpers.js";
+import { useAutoHeight } from "../hooks.js";
 import { BitmovinPlayer, type CastState } from "./BitmovinPlayer.js";
 import { ICON, coverArt } from "./cover.js";
 import "@/index.css";
@@ -145,8 +146,11 @@ function activeChipFor(p: BrowsePayload): string | undefined {
 
 // ── views ───────────────────────────────────────────────────────────────────
 function BrowseView({ p, onPlay, onChip, activeKey }: { p: BrowsePayload; onPlay: (t: Title) => void; onChip: (c: ChipDef) => void; activeKey?: string }) {
+  const rootRef = useRef<HTMLDivElement>(null);
+  useAutoHeight(rootRef);
+
   return (
-    <div className="bitflix-root">
+    <div className="bitflix-root" ref={rootRef}>
       <Topbar brand={p.brand} prompt={p.brand.tagline} />
       <div className="chips">
         {CHIPS.map((c) => (
@@ -170,9 +174,12 @@ function BrowseView({ p, onPlay, onChip, activeKey }: { p: BrowsePayload; onPlay
 function PlayerView({ p, onBack, onPlay }: { p: PlayerPayload; onBack: () => void; onPlay: (t: Title) => void }) {
   const [displayMode, setDisplayMode] = useDisplayMode();
   const playerRef = useRef<any>(null);
+  const rootRef = useRef<HTMLDivElement>(null);
   const [cast, setCast] = useState<CastState>({ available: false, casting: false });
   const t = p.title;
   const isFs = displayMode === "fullscreen";
+
+  useAutoHeight(rootRef);
 
   // reset cast state when the title changes (player remounts)
   useEffect(() => { setCast({ available: false, casting: false }); }, [t.id]);
@@ -187,7 +194,7 @@ function PlayerView({ p, onBack, onPlay }: { p: PlayerPayload; onBack: () => voi
   };
 
   return (
-    <div className="bitflix-root">
+    <div className="bitflix-root" ref={rootRef}>
       <div className="player-view">
         <Topbar brand={p.brand} />
         <div className="player-shell">

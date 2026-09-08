@@ -27,6 +27,7 @@ src/
 ├── index.css           # the broadcast OTT design system
 └── views/
     ├── browse.tsx · recommend.tsx · live.tsx · player.tsx · diagnostics.tsx  # one entry per tool
+    ├── hooks.ts            # view hooks
     └── components/
         ├── BitflixApp.tsx      # shared widget: browse + player + cast + chips
         ├── BitmovinPlayer.tsx  # Bitmovin Player in a React component

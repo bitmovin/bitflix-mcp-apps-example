@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useDisplayMode } from "skybridge/web";
 import type { Brand, Title } from "../../catalog.js";
+import { useAutoHeight } from "../hooks.js";
 import { BitmovinPlayer, type PlayerStatus } from "./BitmovinPlayer.js";
 import { ICON } from "./cover.js";
 import "@/index.css";
@@ -90,6 +91,8 @@ export function Diagnostics({ payload }: { payload?: DiagPayload }) {
   const [drmPlay, setDrmPlay] = useState<Title | null>(null);
   const [drmStatus, setDrmStatus] = useState<Record<string, PlayerStatus>>({});
   const rootRef = useRef<HTMLDivElement>(null);
+
+  useAutoHeight(rootRef);
 
   const patch = (key: string, status: Status, detail?: string) =>
     setRows((rs) => rs.map((r) => (r.key === key ? { ...r, status, detail } : r)));
