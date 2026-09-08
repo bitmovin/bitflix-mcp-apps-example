@@ -17,6 +17,9 @@ export type PlayerStatus =
 
 export type CastState = { available: boolean; casting: boolean; device?: string };
 
+/** How long a source may take to load before the stage reports a failure. */
+const LOAD_TIMEOUT_MS = 30_000;
+
 export interface BitmovinPlayerProps {
   title: Title;
   licenseKey: string;
@@ -84,9 +87,13 @@ export function BitmovinPlayer({ title, licenseKey, onStatus, onPlayerReady, onC
     else source.dash = title.stream.url;
     if (title.sourceConfig) Object.assign(source, title.sourceConfig);
 
-    const timeout = new Promise<never>((_, rej) =>
-      setTimeout(() => rej(new Error("player.load() timeout after 30s")), 30000),
-    );
+    let loadTimer: ReturnType<typeof setTimeout> | undefined;
+    const timeout = new Promise<never>((_, rej) => {
+      loadTimer = setTimeout(
+        () => rej(new Error(`player.load() timeout after ${LOAD_TIMEOUT_MS / 1000}s`)),
+        LOAD_TIMEOUT_MS,
+      );
+    });
     Promise.race([player.load(source), timeout])
       .then(() => {
         // Start muted playback ourselves so the play() promise is ours to catch.
@@ -98,10 +105,12 @@ export function BitmovinPlayer({ title, licenseKey, onStatus, onPlayerReady, onC
       .catch((e: unknown) => {
         const detail = e instanceof Error ? e.message : String(e);
         if (!cancelled) { setError(detail); onStatus?.({ state: "error", detail }); }
-      });
+      })
+      .finally(() => clearTimeout(loadTimer));
 
     return () => {
       cancelled = true;
+      clearTimeout(loadTimer);
       try { player.destroy().catch(() => {}); } catch { /* ignore */ }
       try { node.replaceChildren(); } catch { /* ignore */ }
     };
