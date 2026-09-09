@@ -1,6 +1,5 @@
 import { McpServer } from "skybridge/server";
 import * as z from "zod";
-import { env } from "./env.js";
 import {
   type BrowsePayload,
   type PlayerPayload,
@@ -13,6 +12,10 @@ import {
   recommendationsPayload,
   resolveTitle,
 } from "./catalog.js";
+import { env } from "./env.js";
+
+/** Identity reported to the MCP host. Mirrors the name and version in package.json. */
+const SERVER_INFO = { name: "bitflix", version: "0.1.0" };
 
 // Bitmovin Player license key, injected into every payload so the view can
 // initialize the player. Client-side, domain-locked — same model as any MCP App.
@@ -54,10 +57,7 @@ function playerSummary(p: PlayerPayload): string {
   return `Now playing "${t.title}" (${t.kicker}) in the Bitflix player.${t.score ? ` Score: ${t.score}.` : ""}${t.synopsis ? ` ${t.synopsis}` : ""} Up next: ${p.upNext.map((u) => u.title).join(", ")}.`;
 }
 
-const server = new McpServer(
-  { name: "bitflix", version: "0.1.0" },
-  { capabilities: {} },
-)
+const server = new McpServer(SERVER_INFO, { capabilities: {} })
   // ── browse_catalog ───────────────────────────────────────────────
   .registerTool(
     {
