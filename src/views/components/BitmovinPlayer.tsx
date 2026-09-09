@@ -56,7 +56,11 @@ export function BitmovinPlayer({ title, licenseKey, onStatus, onPlayerReady, onC
       // Real Google Cast via the player's remote-control module (loads the Cast
       // sender SDK from gstatic). In an MCP host sandbox this typically finds no
       // receiver / can't initialize — that unavailability is the actual signal.
-      remotecontrol: { type: "googlecast", receiverApplicationId: "CC1AD845" },
+      remotecontrol: {
+        type: "googlecast",
+        receiverApplicationId: "FFE417E5",
+        receiverVersion: "v3",
+      },
     });
     UIFactory.buildUI(player);
 
