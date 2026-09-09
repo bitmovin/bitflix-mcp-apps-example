@@ -1,13 +1,13 @@
+import "@/index.css";
+import type { PlayerAPI } from "bitmovin-player";
 import { useEffect, useRef, useState } from "react";
 import { useDisplayMode } from "skybridge/web";
 import { BRAND, type Brand, type BrowsePayload, type PlayerPayload, type Title } from "../../catalog.js";
 import { useCallTool } from "../../helpers.js";
 import { useAutoHeight } from "../hooks.js";
-import type { PlayerAPI } from "bitmovin-player";
 import type { CastState } from "./BitmovinPlayer.js";
 import { BitmovinPlayerLazy } from "./BitmovinPlayerLazy.js";
 import { ICON, coverArt } from "./cover.js";
-import "@/index.css";
 
 type Rail = { id: string; title: string; subtitle?: string; layout?: string; items: Title[] };
 type Payload = BrowsePayload | PlayerPayload;
@@ -144,15 +144,19 @@ function Hero({ p, onPlay }: { p: BrowsePayload; onPlay: (t: Title) => void }) {
 }
 
 // ── chips ───────────────────────────────────────────────────────────────────
-type ChipDef = { label: string; key: string; tool: "browse_catalog" | "get_recommendations" | "whats_live"; args?: Record<string, unknown> };
+type ChipBase = { label: string; key: string };
+/** A nav chip and the tool call it makes, carrying only that tool's arguments. */
+type ChipDef =
+  | (ChipBase & { tool: "browse_catalog"; category?: string }) // no category means whole catalog
+  | (ChipBase & { tool: "get_recommendations" | "whats_live" });
 const CHIPS: ChipDef[] = [
   { label: "Home", key: "home", tool: "browse_catalog" },
   { label: "For You", key: "foryou", tool: "get_recommendations" },
   { label: "Live", key: "live", tool: "whats_live" },
-  { label: "Sports", key: "sports", tool: "browse_catalog", args: { category: "sports" } },
-  { label: "News", key: "news", tool: "browse_catalog", args: { category: "news" } },
-  { label: "Films", key: "films", tool: "browse_catalog", args: { category: "films" } },
-  { label: "Originals", key: "originals", tool: "browse_catalog", args: { category: "originals" } },
+  { label: "Sports", key: "sports", tool: "browse_catalog", category: "sports" },
+  { label: "News", key: "news", tool: "browse_catalog", category: "news" },
+  { label: "Films", key: "films", tool: "browse_catalog", category: "films" },
+  { label: "Originals", key: "originals", tool: "browse_catalog", category: "originals" },
 ];
 
 function activeChipFor(p: BrowsePayload): string | undefined {
@@ -284,20 +288,26 @@ export function BitflixApp({ payload }: { payload?: Payload }) {
   if (base && base.view === "browse") lastBrowseRef.current = base;
   const licenseKey = (base?.licenseKey || lastBrowseRef.current?.licenseKey) ?? "";
 
+  const showResult = (r: Awaited<ReturnType<typeof browseCall.callToolAsync>>) => {
+    // An error result resolves with no payload to navigate to.
+    if (r.structuredContent) setNav(r.structuredContent);
+  };
+
   const onChip = (c: ChipDef) => {
     setLocalTitle(null);
-    const hook = c.tool === "browse_catalog" ? browseCall : c.tool === "get_recommendations" ? recCall : liveCall;
-    hook
-      .callToolAsync(c.args ?? {})
-      .then((r: any) => { if (r?.structuredContent) setNav(r.structuredContent as Payload); })
-      .catch(() => {});
+
+    const call =
+      c.tool === "browse_catalog" ? browseCall.callToolAsync(c.category ? { category: c.category } : {})
+      : c.tool === "get_recommendations" ? recCall.callToolAsync({})
+      : liveCall.callToolAsync({});
+    call.then(showResult).catch(() => {});
   };
 
   const play = (t: Title) => setLocalTitle(t);
   const back = () => {
     setLocalTitle(null);
     if (lastBrowseRef.current) setNav(lastBrowseRef.current);
-    else browseCall.callToolAsync({}).then((r: any) => r?.structuredContent && setNav(r.structuredContent as Payload)).catch(() => {});
+    else browseCall.callToolAsync({}).then(showResult).catch(() => {});
   };
 
   const displayed: Payload | undefined = localTitle ? makePlayer(localTitle, lastBrowseRef.current, licenseKey, base) : base;
