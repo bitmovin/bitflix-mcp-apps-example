@@ -12,7 +12,9 @@
     "dev:tunnel": "skybridge dev --tunnel",
     "build": "skybridge build",
     "start": "skybridge start",
-    "deploy": "alpic deploy"
+    "deploy": "alpic deploy",
+    "format": "prettier --write .",
+    "format:check": "prettier --check ."
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.29.0",
@@ -34,6 +36,8 @@
     "@types/react-dom": "^19.1.9",
     "@vitejs/plugin-react": "^6.0.1",
     "alpic": "^1.104.1",
+    "prettier": "^3.9.6",
+    "prettier-plugin-organize-imports": "^4.3.0",
     "tsx": "^4.19.4",
     "typescript": "^5.7.2",
     "vite": "^8.0.0"
