@@ -560,6 +560,14 @@ export interface PlayerPayload {
   licenseKey: string;
 }
 
+export interface DiagnosticsPayload {
+  view: "diagnostics";
+  brand: Brand;
+  /** Protected titles the panel can attempt, one per key system. */
+  drmTitles: Title[];
+  licenseKey: string;
+}
+
 function hydrate(section: Section) {
   return {
     id: section.id,
@@ -667,6 +675,16 @@ export function recommendationsPayload(licenseKey: string, context?: string): Br
         items: newThisWeek,
       },
     ],
+    licenseKey,
+  };
+}
+
+/** The video-capability probe screen, with the protected titles it can try. */
+export function diagnosticsPayload(licenseKey: string): DiagnosticsPayload {
+  return {
+    view: "diagnostics",
+    brand: BRAND,
+    drmTitles: [requireTitle("drm-widevine"), requireTitle("drm-playready")],
     licenseKey,
   };
 }

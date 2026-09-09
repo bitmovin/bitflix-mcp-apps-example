@@ -2,10 +2,10 @@ import { McpServer } from "skybridge/server";
 import * as z from "zod";
 import { env } from "./env.js";
 import {
-  BRAND,
   type BrowsePayload,
   type PlayerPayload,
   categoryPayload,
+  diagnosticsPayload,
   getTitle,
   homePayload,
   livePayload,
@@ -169,10 +169,8 @@ const server = new McpServer(
       _meta: { "openai/widgetAccessible": true },
     },
     async () => {
-      const drmTitles = [getTitle("drm-widevine"), getTitle("drm-playready")].filter(Boolean);
-      const payload = { view: "diagnostics", brand: BRAND, drmTitles, licenseKey: KEY };
       return {
-        structuredContent: payload,
+        structuredContent: diagnosticsPayload(KEY),
         content: [{
           type: "text",
           text: "Rendered the Bitflix video-capability diagnostics panel. It probes EME/DRM key systems (Widevine/PlayReady/FairPlay/ClearKey), MSE, Web Workers, WebAssembly, fullscreen (host display-mode + native API), Picture-in-Picture and autoplay, and can attempt real DRM playback. Ask the user what they'd like to test, then read the on-screen results back to them.",

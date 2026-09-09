@@ -1,14 +1,12 @@
 import { useEffect, useRef, useState } from "react";
 import { useDisplayMode } from "skybridge/web";
-import type { Brand, Title } from "../../catalog.js";
+import type { DiagnosticsPayload, Title } from "../../catalog.js";
 import { useAutoHeight } from "../hooks.js";
 import type { PlayerStatus } from "./BitmovinPlayer.js";
 import { BitmovinPlayerLazy } from "./BitmovinPlayerLazy.js";
 import { ICON } from "./cover.js";
 import "@/index.css";
 
-// Payload from the run_diagnostics tool.
-type DiagPayload = { view: "diagnostics"; brand: Brand; drmTitles: Title[]; licenseKey: string };
 type Status = "yes" | "no" | "partial" | "pending" | "unknown";
 type Row = { key: string; label: string; status: Status; detail?: string };
 
@@ -76,7 +74,7 @@ function StatusPill({ s }: { s: Status }) {
 }
 
 // ── component ─────────────────────────────────────────────────────────────────
-export function Diagnostics({ payload }: { payload?: DiagPayload }) {
+export function Diagnostics({ payload }: { payload?: DiagnosticsPayload }) {
   const brand = payload?.brand ?? { name: "Bitflix", tagline: "", wordmark: "BITFLIX" };
   const drmTitles = payload?.drmTitles ?? [];
   const licenseKey = payload?.licenseKey ?? "";
