@@ -96,10 +96,10 @@ const server = new McpServer(SERVER_INFO, { capabilities: {} })
       description: [
         "Render a personalized Bitflix screen: 'because you watched', 'continue watching', 'new this week'.",
         "Call when the user asks what to watch, wants a recommendation, or asks what's new.",
-        "Pass `context` to bias picks (e.g. 'loves basketball', 'has 20 minutes', 'something light').",
+        "Pass `context` to bias picks toward sport (e.g. 'loves basketball', 'wants a game on').",
       ].join("\n"),
       inputSchema: {
-        context: z.string().optional().describe("Mood, time available, recent activity, a team or genre to bias on."),
+        context: z.string().optional().describe("A sport or game the user follows; moves live sport and highlights to the front."),
       },
       annotations: { readOnlyHint: true, openWorldHint: false, destructiveHint: false },
       view: { component: "recommend", description: "Bitflix personalized recommendations", csp: VIEW_CSP },
@@ -116,7 +116,8 @@ const server = new McpServer(SERVER_INFO, { capabilities: {} })
       name: "whats_live",
       description: [
         "Show only what is live on Bitflix right now — live games and the 24/7 newsroom, with their",
-        "current state (quarter, score, 'on air'). Call for 'what's on right now', 'any games on?', 'put the news on'.",
+        "current state (quarter, score, 'on air'). Call for 'what's on right now', 'any games on?', 'what's live?'.",
+        "This lists what is on air; call `play_title` to start playing one of them.",
       ].join("\n"),
       inputSchema: {},
       annotations: { readOnlyHint: true, openWorldHint: false, destructiveHint: false },
@@ -134,7 +135,7 @@ const server = new McpServer(SERVER_INFO, { capabilities: {} })
       name: "play_title",
       description: [
         "Start playback of a specific Bitflix title in the inline Bitmovin Player.",
-        "Call when the user names something to watch ('play the finals', 'put on Orbit', 'watch the news').",
+        "Call when the user names something to watch ('play the finals', 'put on Orbit', 'put the news on').",
         "Pass the exact `id` (from a previous browse result) or a free-text `query` (title, team, topic).",
       ].join("\n"),
       inputSchema: {
