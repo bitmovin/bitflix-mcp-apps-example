@@ -4,12 +4,6 @@ import { UIFactory } from "bitmovin-player-ui";
 import "bitmovin-player-ui/dist/css/bitmovinplayer-ui.css";
 import type { Title } from "../../catalog.js";
 
-/**
- * Mounts the Bitmovin Player into a ref'd node that React leaves alone (the
- * player appends its own DOM). The loading / error overlays are siblings React
- * controls. Streams are fetched directly — the view CSP allow-lists every
- * origin in our catalog and they send CORS, so no MCP segment proxy is needed.
- */
 export type PlayerStatus =
   | { state: "loading" }
   | { state: "ready" }
@@ -28,6 +22,14 @@ export interface BitmovinPlayerProps {
   onCast?: (s: CastState) => void;
 }
 
+/**
+ * Mounts the Bitmovin Player into a ref'd node that React leaves alone, since
+ * the player appends its own DOM. The loading and error overlays are siblings
+ * React controls.
+ *
+ * Streams are fetched directly. Every origin the catalog uses is allow-listed
+ * by the view CSP and answers with CORS, so no segment proxy is needed.
+ */
 export function BitmovinPlayer({ title, licenseKey, onStatus, onPlayerReady, onCast }: BitmovinPlayerProps) {
   const mountRef = useRef<HTMLDivElement>(null);
   const [loading, setLoading] = useState(true);

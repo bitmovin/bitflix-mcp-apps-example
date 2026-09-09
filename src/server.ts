@@ -14,19 +14,25 @@ import {
 } from "./catalog.js";
 import { env } from "./env.js";
 
-/** Identity reported to the MCP host. Mirrors the name and version in package.json. */
+/**
+ * Identity reported to the MCP host. Mirrors the name and version in package.json.
+ */
 const SERVER_INFO = { name: "bitflix", version: "0.1.0" };
 
-// Bitmovin Player license key, injected into every payload so the view can
-// initialize the player. Client-side, domain-locked — same model as any MCP App.
+/**
+ * Bitmovin Player license key, injected into every payload so the view can initialize the player.
+ */
 const KEY = env.BITMOVIN_PLAYER_KEY;
 if (!KEY) console.warn("WARNING: BITMOVIN_PLAYER_KEY not set — playback will fail to initialize.");
 
-// CSP for the views. Skybridge handles the per-host sandbox-domain dance; we
-// only declare which origins the widget may reach:
-//   connect — manifest + segment fetches (Bitmovin CDN, the live-sim, and the
-//             S3 origin the live-sim's segments live on)
-//   resource — Google Fonts for the display typography
+/**
+ * Origins the views may reach beyond the server itself, which Skybridge adds automatically.
+ * 
+ * - `connectDomains` carries manifest, segment and DRM license requests;
+ * - `resourceDomains` carries fonts and scripts the widget loads.
+ * 
+ * A stream origin absent from here is blocked by the sandbox.
+ */
 const VIEW_CSP = {
   connectDomains: [
     "https://*.bitmovin.com",                    // VOD + DRM manifests/segments (Art of Motion)
@@ -37,9 +43,9 @@ const VIEW_CSP = {
     "data:",
   ],
   resourceDomains: [
-    "https://fonts.googleapis.com",
-    "https://fonts.gstatic.com",
-    "https://www.gstatic.com",     // Google Cast sender SDK (cast_sender.js)
+    "https://fonts.googleapis.com",  // Google Fonts stylesheet
+    "https://fonts.gstatic.com",     // Google Fonts files
+    "https://www.gstatic.com",       // Google Cast sender SDK (cast_sender.js)
     "https://*.bitmovin.com",
     "blob:",
     "data:",
