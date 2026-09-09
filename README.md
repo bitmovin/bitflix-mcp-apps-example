@@ -5,7 +5,7 @@
 
 You open it, browse it, get recommendations, and watch — by talking to ChatGPT or Claude. It's a reference implementation, and a working answer to:
 
-> *What does an online video platform need to be when the "app" is a conversation and the UI is generated on the fly?*
+> _What does an online video platform need to be when the "app" is a conversation and the UI is generated on the fly?_
 
 Bitflix is built on the [Skybridge](https://github.com/alpic-ai/skybridge) React framework for MCP Apps,
 so you can run it in the local playground, expose it through a dev tunnel, or deploy it to a permanent URL.
@@ -39,13 +39,13 @@ src/
 
 Each tool the server offers is bound to a view via `registerTool({ view: { component } })`
 
-| Tool | View | Example utterance |
-| --- | --- | --- |
-| `browse_catalog` | `browse` | "open Bitflix", "show me sports" |
-| `get_recommendations` | `recommend` | "what should I watch tonight?" |
-| `whats_live` | `live` | "any games on?", "put the news on" |
-| `play_title` | `player` | "play the finals", "resume Aurora" |
-| `run_diagnostics` | `diagnostics` | "test what video features work here" |
+| Tool                  | View          | Example utterance                    |
+| --------------------- | ------------- | ------------------------------------ |
+| `browse_catalog`      | `browse`      | "open Bitflix", "show me sports"     |
+| `get_recommendations` | `recommend`   | "what should I watch tonight?"       |
+| `whats_live`          | `live`        | "any games on?", "put the news on"   |
+| `play_title`          | `player`      | "play the finals", "resume Aurora"   |
+| `run_diagnostics`     | `diagnostics` | "test what video features work here" |
 
 The first four tools render the shared `BitflixApp`, which switches between the browse face and the player
 face via `payload.view`. Tiles are clickable to start playback; the category chips
@@ -83,8 +83,8 @@ npm run dev                 # DevTools playground at http://localhost:3000 — r
 
 ### Connect to Claude / ChatGPT
 
-Run `npm run dev:tunnel` (or deploy), then add the resulting HTTPS URL (ending with `/mcp`) as a custom connector in Claude/ChatGPT. Then open a chat and write *"open Bitflix"*, *"what's live?"*, *"recommend something short"*, *"play the
-finals"*, *"cast it to the living room TV."*
+Run `npm run dev:tunnel` (or deploy), then add the resulting HTTPS URL (ending with `/mcp`) as a custom connector in Claude/ChatGPT. Then open a chat and write _"open Bitflix"_, _"what's live?"_, _"recommend something short"_, _"play the
+finals"_, _"cast it to the living room TV."_
 
 ## Limitations
 
@@ -120,4 +120,4 @@ Streams referenced in the catalog are third-party public test assets, used for d
 
 ---
 
-*Bitflix, its teams, scores, and titles are fictional.*
+_Bitflix, its teams, scores, and titles are fictional._

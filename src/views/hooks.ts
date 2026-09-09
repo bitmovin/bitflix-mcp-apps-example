@@ -1,5 +1,5 @@
-import { type RefObject, useEffect } from "react";
-import { useLayout, useRequestSize } from "skybridge/web";
+import { type RefObject, useEffect } from 'react';
+import { useLayout, useRequestSize } from 'skybridge/web';
 
 /**
  * Keep the host informed of the referenced element's content height, so it can

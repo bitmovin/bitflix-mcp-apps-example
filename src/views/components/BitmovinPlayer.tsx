@@ -1,13 +1,10 @@
-import { useEffect, useRef, useState } from "react";
-import { Player, PlayerEvent, type PlayerAPI, type SourceConfig } from "bitmovin-player";
-import { UIFactory } from "bitmovin-player-ui";
-import "bitmovin-player-ui/dist/css/bitmovinplayer-ui.css";
-import type { Title } from "../../catalog.js";
+import { Player, PlayerEvent, type PlayerAPI, type SourceConfig } from 'bitmovin-player';
+import { UIFactory } from 'bitmovin-player-ui';
+import 'bitmovin-player-ui/dist/css/bitmovinplayer-ui.css';
+import { useEffect, useRef, useState } from 'react';
+import type { Title } from '../../catalog.js';
 
-export type PlayerStatus =
-  | { state: "loading" }
-  | { state: "ready" }
-  | { state: "error"; detail: string };
+export type PlayerStatus = { state: 'loading' } | { state: 'ready' } | { state: 'error'; detail: string };
 
 export type CastState = { available: boolean; casting: boolean; device?: string };
 
@@ -39,7 +36,7 @@ export function BitmovinPlayer({ title, licenseKey, onStatus, onPlayerReady, onC
     let cancelled = false;
     setLoading(true);
     setError(null);
-    onStatus?.({ state: "loading" });
+    onStatus?.({ state: 'loading' });
 
     const node = mountRef.current;
     if (!node) return;
@@ -59,37 +56,44 @@ export function BitmovinPlayer({ title, licenseKey, onStatus, onPlayerReady, onC
       // sender SDK from gstatic). In an MCP host sandbox this typically finds no
       // receiver / can't initialize — that unavailability is the actual signal.
       remotecontrol: {
-        type: "googlecast",
-        receiverApplicationId: "FFE417E5",
-        receiverVersion: "v3",
+        type: 'googlecast',
+        receiverApplicationId: 'FFE417E5',
+        receiverVersion: 'v3',
       },
     });
     UIFactory.buildUI(player);
 
     const reportCast = (device?: string) => {
       if (cancelled) return;
-      try { onCast?.({ available: player.isCastAvailable(), casting: player.isCasting(), device }); } catch { /* ignore */ }
+      try {
+        onCast?.({ available: player.isCastAvailable(), casting: player.isCasting(), device });
+      } catch {
+        /* ignore */
+      }
     };
     player.on(PlayerEvent.Ready, () => {
       if (cancelled) return;
       setLoading(false);
-      onStatus?.({ state: "ready" });
+      onStatus?.({ state: 'ready' });
       onPlayerReady?.(player);
       reportCast();
     });
-    player.on(PlayerEvent.Error, (e) => {
-      const detail = `Error ${e.code}: ${e.message ?? "playback failed"}`;
-      if (!cancelled) { setError(detail); onStatus?.({ state: "error", detail }); }
+    player.on(PlayerEvent.Error, e => {
+      const detail = `Error ${e.code}: ${e.message ?? 'playback failed'}`;
+      if (!cancelled) {
+        setError(detail);
+        onStatus?.({ state: 'error', detail });
+      }
     });
     // Real cast lifecycle from the player's Cast module.
     player.on(PlayerEvent.CastAvailable, () => reportCast());
     player.on(PlayerEvent.CastStart, () => reportCast());
-    player.on(PlayerEvent.CastStarted, (e) => reportCast(e.deviceName));
+    player.on(PlayerEvent.CastStarted, e => reportCast(e.deviceName));
     player.on(PlayerEvent.CastStopped, () => reportCast());
-    player.on(PlayerEvent.CastWaitingForDevice, (e) => reportCast(e.castPayload.deviceName));
+    player.on(PlayerEvent.CastWaitingForDevice, e => reportCast(e.castPayload.deviceName));
 
     const source: SourceConfig = { title: title.title };
-    if (title.stream.type === "hls") source.hls = title.stream.url;
+    if (title.stream.type === 'hls') source.hls = title.stream.url;
     else source.dash = title.stream.url;
     if (title.sourceConfig) Object.assign(source, title.sourceConfig);
 
@@ -106,19 +110,32 @@ export function BitmovinPlayer({ title, licenseKey, onStatus, onPlayerReady, onC
         // In a sandbox that blocks even muted autoplay (e.g. the local dev
         // playground) the rejection is benign; the user can press play.
         if (cancelled) return;
-        player.play().catch(() => { /* ignore */ });
+        player.play().catch(() => {
+          /* ignore */
+        });
       })
       .catch((e: unknown) => {
         const detail = e instanceof Error ? e.message : String(e);
-        if (!cancelled) { setError(detail); onStatus?.({ state: "error", detail }); }
+        if (!cancelled) {
+          setError(detail);
+          onStatus?.({ state: 'error', detail });
+        }
       })
       .finally(() => clearTimeout(loadTimer));
 
     return () => {
       cancelled = true;
       clearTimeout(loadTimer);
-      try { player.destroy().catch(() => {}); } catch { /* ignore */ }
-      try { node.replaceChildren(); } catch { /* ignore */ }
+      try {
+        player.destroy().catch(() => {});
+      } catch {
+        /* ignore */
+      }
+      try {
+        node.replaceChildren();
+      } catch {
+        /* ignore */
+      }
     };
   }, [title.id, title.stream.url, licenseKey]);
 

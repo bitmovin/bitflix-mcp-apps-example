@@ -1,9 +1,7 @@
-import { Suspense, lazy } from "react";
-import type { BitmovinPlayerProps } from "./BitmovinPlayer.js";
+import { Suspense, lazy } from 'react';
+import type { BitmovinPlayerProps } from './BitmovinPlayer.js';
 
-const LoadedPlayer = lazy(() =>
-  import("./BitmovinPlayer.js").then((m) => ({ default: m.BitmovinPlayer })),
-);
+const LoadedPlayer = lazy(() => import('./BitmovinPlayer.js').then(m => ({ default: m.BitmovinPlayer })));
 
 /**
  * The Bitmovin player, code-split behind a dynamic import so views that only
