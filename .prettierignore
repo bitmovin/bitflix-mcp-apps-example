@@ -1,1 +1,4 @@
 package-lock.json
+
+# Written by skybridge's view scanner; formatting it would fight the generator.
+.skybridge/

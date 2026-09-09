@@ -1,6 +1,5 @@
 node_modules/
 dist/
-.skybridge/
 
 # secrets — never commit
 .env
