@@ -5,12 +5,12 @@ import { useAutoHeight } from "../hooks.js";
 import type { PlayerStatus } from "./BitmovinPlayer.js";
 import { BitmovinPlayerLazy } from "./BitmovinPlayerLazy.js";
 import { ICON } from "./cover.js";
+import { Icon } from "./Icon.js";
 import "@/index.css";
 
 type Status = "yes" | "no" | "partial" | "pending" | "unknown";
 type Row = { key: string; label: string; status: Status; detail?: string };
 
-const Ico = ({ html }: { html: string }) => <span aria-hidden="true" dangerouslySetInnerHTML={{ __html: html }} />;
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
 // ── probes ──────────────────────────────────────────────────────────────────
@@ -226,9 +226,9 @@ export function Diagnostics({ payload }: { payload?: DiagnosticsPayload }) {
       <div className="rail reveal">
         <div className="rail-head"><h3>Fullscreen &amp; Picture-in-Picture</h3><span className="sub">two different things: host displayMode = maximize inside the client window · native API = true OS/desktop fullscreen</span></div>
         <div className="diag-btn-row">
-          <button className="iconbtn accent" onClick={testHostFs}><Ico html={ICON.tv} />Fullscreen — host displayMode</button>
-          <button className="iconbtn" onClick={testNativeFs}><Ico html={ICON.tv} />Fullscreen — native API</button>
-          <button className="iconbtn" onClick={testPip}><Ico html={ICON.cast} />Picture-in-Picture</button>
+          <button className="iconbtn accent" onClick={testHostFs}><Icon html={ICON.tv} />Fullscreen — host displayMode</button>
+          <button className="iconbtn" onClick={testNativeFs}><Icon html={ICON.tv} />Fullscreen — native API</button>
+          <button className="iconbtn" onClick={testPip}><Icon html={ICON.cast} />Picture-in-Picture</button>
         </div>
         <div className="diag-table">
           {extraRow(fsHost)}
@@ -247,7 +247,7 @@ export function Diagnostics({ payload }: { payload?: DiagnosticsPayload }) {
             const label = t.badges.find((b) => b === "WIDEVINE" || b === "PLAYREADY") || t.title;
             return (
               <button key={t.id} className={`iconbtn ${drmPlay?.id === t.id ? "accent" : ""}`} onClick={() => setDrmPlay(t)}>
-                <Ico html={ICON.play} />{label}
+                <Icon html={ICON.play} />{label}
                 {s ? <span className={`pill ${s.state === "ready" ? "yes" : s.state === "error" ? "no" : "pending"}`}>{s.state === "ready" ? "plays" : s.state === "error" ? "blocked" : "…"}</span> : null}
               </button>
             );

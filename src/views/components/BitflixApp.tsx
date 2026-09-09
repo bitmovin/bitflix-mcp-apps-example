@@ -8,11 +8,11 @@ import { useAutoHeight } from "../hooks.js";
 import type { CastState } from "./BitmovinPlayer.js";
 import { BitmovinPlayerLazy } from "./BitmovinPlayerLazy.js";
 import { ICON, coverArt } from "./cover.js";
+import { Icon } from "./Icon.js";
 
 type Rail = { id: string; title: string; subtitle?: string; layout?: string; items: Title[] };
 type Payload = BrowsePayload | PlayerPayload;
 
-const Ico = ({ html }: { html: string }) => <span aria-hidden="true" dangerouslySetInnerHTML={{ __html: html }} />;
 
 // ── small pieces ───────────────────────────────────────────────────────────
 function FooterNote({ brand }: { brand: Brand }) {
@@ -135,8 +135,8 @@ function Hero({ p, onPlay }: { p: BrowsePayload; onPlay: (t: Title) => void }) {
         <h2>{t.title}</h2>
         <p className="syn">{t.synopsis}</p>
         <div className="hero-actions">
-          <button className="btn btn-play" onClick={(e) => { e.stopPropagation(); onPlay(t); }}><Ico html={ICON.play} />Play</button>
-          <button className="btn btn-ghost" onClick={(e) => { e.stopPropagation(); onPlay(t); }}><Ico html={ICON.info} />More info</button>
+          <button className="btn btn-play" onClick={(e) => { e.stopPropagation(); onPlay(t); }}><Icon html={ICON.play} />Play</button>
+          <button className="btn btn-ghost" onClick={(e) => { e.stopPropagation(); onPlay(t); }}><Icon html={ICON.info} />More info</button>
         </div>
       </div>
     </div>
@@ -245,14 +245,14 @@ function PlayerView({ p, onBack, onPlay }: { p: PlayerPayload; onBack: () => voi
             <p className="syn">{t.synopsis}</p>
           </div>
           <div className="controls">
-            <button className="iconbtn" onClick={onBack}><Ico html={ICON.back} />Back</button>
+            <button className="iconbtn" onClick={onBack}><Icon html={ICON.back} />Back</button>
             <button
               className={`iconbtn ${cast.available || cast.casting ? "accent" : ""}`}
               disabled={!cast.available && !cast.casting}
               title={cast.available || cast.casting ? "Google Cast" : "No Google Cast receiver available in this host sandbox"}
               onClick={onCastClick}
-            ><Ico html={ICON.cast} />{castLabel}</button>
-            <button className="iconbtn" onClick={() => setDisplayMode(isFs ? "inline" : "fullscreen")}><Ico html={ICON.tv} />{isFs ? "Exit" : "Fullscreen"}</button>
+            ><Icon html={ICON.cast} />{castLabel}</button>
+            <button className="iconbtn" onClick={() => setDisplayMode(isFs ? "inline" : "fullscreen")}><Icon html={ICON.tv} />{isFs ? "Exit" : "Fullscreen"}</button>
           </div>
         </div>
         {p.upNext?.length ? <RailRow section={{ id: "upnext", title: "Up Next", layout: "wide", items: p.upNext }} onPlay={onPlay} /> : null}
