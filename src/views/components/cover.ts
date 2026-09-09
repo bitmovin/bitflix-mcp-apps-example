@@ -38,7 +38,7 @@ export function coverArt(c: Cover, glyph = "", opts: { hero?: boolean } = {}): s
       <circle cx="150" cy="60" r="40" fill="none" stroke="${a}" stroke-width="2" opacity=".4"/>
       <circle cx="70" cy="230" r="34" fill="none" stroke="${a}" stroke-width="2" opacity=".5"/>
       <circle cx="230" cy="230" r="34" fill="none" stroke="${a}" stroke-width="2" opacity=".5"/>
-      <line x1="0" y1="150" x2="300" y2="150" stroke="${c.to === '#020708' ? '#fff' : a}" stroke-width="3" opacity=".35"/>
+      <line x1="0" y1="150" x2="300" y2="150" stroke="#fff" stroke-width="3" opacity=".35"/>
       <circle cx="150" cy="150" r="7" fill="${a}"/>`,
     newsroom: `
       <circle cx="150" cy="120" r="62" fill="none" stroke="${a}" stroke-width="1.5" opacity=".45"/>

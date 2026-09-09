@@ -279,34 +279,9 @@ body::after {
 .metarow .dotsep { color: var(--ink-faint); }
 .metarow .small { color: var(--ink-dim); font-size: 13px; }
 
-/* ── Cast overlay ─────────────────────────────────────────────────── */
-.cast-overlay { position: fixed; inset: 0; z-index: 100; display: flex; align-items: center; justify-content: center; background: rgba(4,4,6,0.72); backdrop-filter: blur(10px); animation: fade 0.3s var(--ease) both; }
-.cast-card { width: min(420px, 90vw); background: linear-gradient(180deg, var(--panel-2), var(--panel)); border: 1px solid var(--line-strong); border-radius: var(--radius-lg); padding: 24px; box-shadow: var(--shadow); animation: rise 0.4s var(--ease) both; }
-.cast-card h4 { font-family: var(--display); font-weight: 700; font-size: 23px; letter-spacing: 0.03em; margin-bottom: 4px; }
-.cast-card .sub { color: var(--ink-dim); font-size: 13.5px; margin-bottom: 18px; }
-.device { display: flex; align-items: center; gap: 14px; width: 100%; padding: 14px; border-radius: 12px; border: 1px solid var(--line); background: rgba(255,255,255,0.03); cursor: pointer; margin-bottom: 10px; transition: all 0.2s var(--ease); text-align: left; color: var(--ink); }
-.device:hover { border-color: var(--ember-2); background: rgba(255,255,255,0.06); transform: translateX(2px); }
-.device .ic { width: 42px; height: 42px; border-radius: 11px; background: rgba(255,255,255,0.06); display: flex; align-items: center; justify-content: center; flex: none; }
-.device .ic svg { width: 22px; height: 22px; color: var(--ember-1); }
-.device .label { font-weight: 700; font-size: 15px; }
-.device .where { color: var(--ink-faint); font-size: 12.5px; margin-top: 2px; }
-.device .signal { margin-left: auto; color: var(--ink-faint); font-size: 11px; letter-spacing: 0.08em; }
-.cast-card .cancel { width: 100%; text-align: center; margin-top: 6px; color: var(--ink-dim); background: none; border: 0; cursor: pointer; font-family: var(--body); font-size: 13px; padding: 8px; }
-.cast-card .cancel:hover { color: var(--ink); }
-
-.casting-banner { position: absolute; inset: 0; z-index: 6; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 16px; text-align: center; padding: 24px; background: radial-gradient(70% 70% at 50% 38%, rgba(255,90,40,0.22), transparent 72%), rgba(6,6,9,0.97); animation: fade 0.4s var(--ease) both; }
-.casting-banner .tv-ic { width: 64px; height: 64px; color: var(--ember-1); animation: floaty 3s ease-in-out infinite; }
-.casting-banner h3 { font-family: var(--display); font-weight: 800; font-size: 30px; letter-spacing: 0.02em; }
-.casting-banner p { color: var(--ink-dim); font-size: 14px; max-width: 38ch; }
-.casting-banner .waves { display: flex; gap: 6px; align-items: flex-end; height: 22px; }
-.casting-banner .waves span { width: 4px; background: linear-gradient(var(--ember-1), var(--ember-2)); border-radius: 2px; animation: eq 1s ease-in-out infinite; }
-.casting-banner .waves span:nth-child(2){ animation-delay: .15s } .casting-banner .waves span:nth-child(3){ animation-delay: .3s } .casting-banner .waves span:nth-child(4){ animation-delay: .45s } .casting-banner .waves span:nth-child(5){ animation-delay: .6s }
-@keyframes eq { 0%,100%{ height: 6px } 50%{ height: 22px } }
-@keyframes floaty { 0%,100%{ transform: translateY(0) } 50%{ transform: translateY(-6px) } }
 
 /* ── shared ───────────────────────────────────────────────────────── */
 @keyframes rise { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: none; } }
-@keyframes fade { from { opacity: 0; } to { opacity: 1; } }
 .reveal { animation: rise 0.6s var(--ease) both; }
 
 .footer-note { margin-top: 8px; text-align: center; color: var(--ink-faint); font-size: 11.5px; letter-spacing: 0.03em; }
@@ -345,8 +320,7 @@ body::after {
 @keyframes railIn { from { opacity: 0; transform: translateY(18px); } to { opacity: 1; transform: none; } }
 
 /* Visible keyboard focus on every interactive surface. */
-.chip:focus-visible, .btn:focus-visible, .card:focus-visible, .iconbtn:focus-visible,
-.device:focus-visible {
+.chip:focus-visible, .btn:focus-visible, .card:focus-visible, .iconbtn:focus-visible {
   outline: 2px solid var(--signal); outline-offset: 3px; border-radius: 10px;
 }
 .card:focus-visible { outline: none; border-radius: var(--radius); }
@@ -360,5 +334,5 @@ body::after {
   .bitflix-root .rail { animation: none; opacity: 1; transform: none; }
   .hero .art::after { animation: none; opacity: 0; }
   .card:hover .art svg { transform: none; }
-  .badge.live::before, .casting-banner .tv-ic, .casting-banner .waves span { animation: none; }
+  .badge.live::before { animation: none; }
 }
