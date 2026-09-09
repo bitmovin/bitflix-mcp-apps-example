@@ -159,13 +159,15 @@ const CHIPS: ChipDef[] = [
   { label: "Originals", key: "originals", tool: "browse_catalog", category: "originals" },
 ];
 
+/** The chip to mark active, or none for a screen no chip leads to. */
 function activeChipFor(p: BrowsePayload): string | undefined {
-  const h = p.headline.toLowerCase();
-  if (h.includes("picked for you") || h.includes("because you mentioned")) return "foryou";
-  if (h.includes("on air")) return "live";
-  if (h.startsWith("good")) return "home";
-  for (const k of ["sports", "news", "films", "originals"]) if (h.includes(k)) return k;
-  return undefined;
+  switch (p.screen) {
+    case "home": return "home";
+    case "recommendations": return "foryou";
+    case "live": return "live";
+    case "category": return p.category;
+    case "search": return undefined;
+  }
 }
 
 // ── views ───────────────────────────────────────────────────────────────────

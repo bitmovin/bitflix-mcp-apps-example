@@ -541,7 +541,9 @@ export const BRAND: Brand = {
   wordmark: "BITFLIX",
 };
 
-export interface BrowsePayload {
+export type BrowseScreen = "home" | "live" | "recommendations" | "category" | "search";
+
+interface BrowsePayloadBase {
   view: "browse";
   brand: Brand;
   headline: string;
@@ -551,6 +553,10 @@ export interface BrowsePayload {
   sections: { id: string; title: string; subtitle?: string; layout?: string; items: Title[] }[];
   licenseKey: string;
 }
+
+export type BrowsePayload =
+  | (BrowsePayloadBase & { screen: Exclude<BrowseScreen, "category"> })
+  | (BrowsePayloadBase & { screen: "category"; category: string });
 
 export interface PlayerPayload {
   view: "player";
@@ -583,6 +589,7 @@ export function homePayload(licenseKey: string): BrowsePayload {
   return {
     view: "browse",
     brand: BRAND,
+    screen: "home",
     headline: "Good evening.",
     subhead: "Here's what's worth your time tonight.",
     featuredId: "live-finals-g6",
@@ -593,11 +600,11 @@ export function homePayload(licenseKey: string): BrowsePayload {
 
 /** A browse screen scoped to a category or free-text query. */
 export function categoryPayload(licenseKey: string, query: string): BrowsePayload {
-  const results = CATEGORY_SYNONYMS[query.trim().toLowerCase()]
-    ? byCategory(query)
-    : search(query);
+  const bucket = query.trim().toLowerCase();
+  const isCategory = bucket in CATEGORY_SYNONYMS;
+  const results = isCategory ? byCategory(query) : search(query);
   const items = results.length ? results : byCategory("live");
-  return {
+  const common: BrowsePayloadBase = {
     view: "browse",
     brand: BRAND,
     headline: results.length ? `Results for "${query}"` : "Nothing exact — here's what's live",
@@ -608,6 +615,7 @@ export function categoryPayload(licenseKey: string, query: string): BrowsePayloa
     ],
     licenseKey,
   };
+  return isCategory ? { ...common, screen: "category", category: bucket } : { ...common, screen: "search" };
 }
 
 /** Live-only browse screen. */
@@ -616,6 +624,7 @@ export function livePayload(licenseKey: string): BrowsePayload {
   return {
     view: "browse",
     brand: BRAND,
+    screen: "live",
     headline: "On air right now",
     subhead: `${items.length} live channels across sports and news`,
     featuredId: items[0]?.id,
@@ -650,6 +659,7 @@ export function recommendationsPayload(licenseKey: string, context?: string): Br
   return {
     view: "browse",
     brand: BRAND,
+    screen: "recommendations",
     headline: "Picked for you",
     subhead: context
       ? `Because you mentioned: "${context}"`
