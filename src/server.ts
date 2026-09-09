@@ -89,7 +89,7 @@ const server = new McpServer(SERVER_INFO, { capabilities: {} })
       view: { component: 'browse', description: 'Bitflix home / browse screen', csp: VIEW_CSP },
       _meta: { 'openai/widgetAccessible': true },
     },
-    async ({ category, query }) => {
+    ({ category, query }) => {
       const q = query || category;
       const p = q ? categoryPayload(KEY, q) : homePayload(KEY);
       return { structuredContent: p, content: [{ type: 'text', text: browseSummary(p) }], isError: false };
@@ -114,7 +114,7 @@ const server = new McpServer(SERVER_INFO, { capabilities: {} })
       view: { component: 'recommend', description: 'Bitflix personalized recommendations', csp: VIEW_CSP },
       _meta: { 'openai/widgetAccessible': true },
     },
-    async ({ context }) => {
+    ({ context }) => {
       const p = recommendationsPayload(KEY, context);
       return { structuredContent: p, content: [{ type: 'text', text: browseSummary(p) }], isError: false };
     },
@@ -133,7 +133,7 @@ const server = new McpServer(SERVER_INFO, { capabilities: {} })
       view: { component: 'live', description: 'Bitflix live now', csp: VIEW_CSP },
       _meta: { 'openai/widgetAccessible': true },
     },
-    async () => {
+    () => {
       const p = livePayload(KEY);
       return { structuredContent: p, content: [{ type: 'text', text: browseSummary(p) }], isError: false };
     },
@@ -155,7 +155,7 @@ const server = new McpServer(SERVER_INFO, { capabilities: {} })
       view: { component: 'player', description: 'Bitflix player', csp: VIEW_CSP },
       _meta: { 'openai/widgetAccessible': true },
     },
-    async ({ id, query }) => {
+    ({ id, query }) => {
       const needle = id || query || '';
       const title = (id && getTitle(id)) || resolveTitle(needle);
       if (!title) {
@@ -188,7 +188,7 @@ const server = new McpServer(SERVER_INFO, { capabilities: {} })
       view: { component: 'diagnostics', description: 'Video capability diagnostics for MCP hosts', csp: VIEW_CSP },
       _meta: { 'openai/widgetAccessible': true },
     },
-    async () => {
+    () => {
       return {
         structuredContent: diagnosticsPayload(KEY),
         content: [

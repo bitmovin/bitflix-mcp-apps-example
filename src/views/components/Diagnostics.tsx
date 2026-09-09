@@ -79,10 +79,10 @@ function initialRows(): Row[] {
     { key: 'pip-avail', label: 'Picture-in-Picture available', status: 'pending' },
     { key: 'remoteplayback', label: 'Remote Playback API (cast)', status: 'pending' },
     { key: 'presentation', label: 'Presentation API (Google Cast)', status: 'pending' },
-    ...EME_KEY_SYSTEMS.map(([label]) => ({
+    ...EME_KEY_SYSTEMS.map(([label]): Row => ({
       key: `eme-${label}`,
       label: `EME · ${label}`,
-      status: 'pending' as Status,
+      status: 'pending',
     })),
   ];
 }
@@ -128,7 +128,7 @@ export function Diagnostics({ payload }: { payload?: DiagnosticsPayload }) {
 
   useEffect(() => {
     let alive = true;
-    (async () => {
+    void (async () => {
       const mse = typeof window.MediaSource !== 'undefined';
       const mseH264 = mse && MediaSource.isTypeSupported('video/mp4; codecs="avc1.42E01E"');
       patch(
@@ -204,7 +204,7 @@ export function Diagnostics({ payload }: { payload?: DiagnosticsPayload }) {
   const testHostFs = async () => {
     setFsHost({ key: 'fs-host', label: 'host displayMode', status: 'pending' });
     try {
-      setDisplayMode('fullscreen');
+      void setDisplayMode('fullscreen');
       await sleep(700);
       const after = dmRef.current;
       const ok = after === 'fullscreen';
@@ -452,7 +452,7 @@ export function Diagnostics({ payload }: { payload?: DiagnosticsPayload }) {
             </div>
             {drmStatus[drmPlay.id]?.state === 'error' ? (
               <div className="diag-detail" style={{ marginTop: 8 }}>
-                {drmStatus[drmPlay.id] && 'detail' in drmStatus[drmPlay.id]!
+                {drmStatus[drmPlay.id] && 'detail' in drmStatus[drmPlay.id]
                   ? (drmStatus[drmPlay.id] as { detail: string }).detail
                   : ''}
               </div>

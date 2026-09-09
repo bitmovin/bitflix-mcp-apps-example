@@ -137,6 +137,11 @@ export function BitmovinPlayer({ title, licenseKey, onStatus, onPlayerReady, onC
         /* ignore */
       }
     };
+    // The callbacks are captured on purpose. Both call sites pass inline
+    // arrows, so listing them here would tear down and rebuild the player on
+    // every parent render. The title's other fields are keyed by its id, which
+    // a static catalog never reuses for different content.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [title.id, title.stream.url, licenseKey]);
 
   return (

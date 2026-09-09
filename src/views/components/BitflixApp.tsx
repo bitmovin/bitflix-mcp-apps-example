@@ -155,6 +155,11 @@ function Hero({ p, onPlay }: { p: BrowsePayload; onPlay: (t: Title) => void }) {
   const t = p.sections.flatMap(s => s.items).find(x => x.id === p.featuredId) || p.sections[0]?.items[0];
   if (!t) return null;
   return (
+    // Clicking the frame is a pointer shortcut for the Play button inside it.
+    // A button role may not wrap real buttons, and keyboard and screen-reader
+    // users start the same playback from those buttons, so the frame stays
+    // non-interactive to assistive technology.
+    // eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions
     <div className="hero reveal" onClick={() => onPlay(t)}>
       <div className="art">
         <div
@@ -263,7 +268,7 @@ function BrowseView({
       </div>
       <Hero p={p} onPlay={onPlay} />
       {p.sections.map(s => (
-        <RailRow key={s.id} section={s as Rail} onPlay={onPlay} />
+        <RailRow key={s.id} section={s} onPlay={onPlay} />
       ))}
       <FooterNote brand={p.brand} />
       <div data-llm="" style={{ display: 'none' }}>
