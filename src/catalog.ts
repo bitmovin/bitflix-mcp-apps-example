@@ -47,7 +47,6 @@ export type Motif =
 export type Kind = 'live' | 'game' | 'news' | 'film' | 'series' | 'highlight' | 'original' | 'doc';
 
 export type Badge =
-  | 'LIVE'
   | 'NEW'
   | 'NEW SEASON'
   | 'BREAKING'
@@ -61,24 +60,38 @@ export type Badge =
   | 'WIDEVINE'
   | 'PLAYREADY';
 
-export interface Title {
+interface TitleBase {
   id: string;
   title: string;
   kind: Kind;
   kicker: string; // eyebrow, e.g. "NBA · Conference Finals"
   synopsis: string;
   badges: Badge[];
-  rating?: string; // "TV-14", "PG-13", …
-  year?: number;
-  durationMin?: number; // VOD runtime
-  liveLabel?: string; // "Q3 · 7:42", "Top of the hour"
-  score?: string; // "LAL 88 — BOS 84"
-  progressPct?: number; // continue-watching progress (0–100)
+  score?: string; // "LAL 88 — BOS 74", on a live game or a replay
   tags: string[]; // for search + recommendations
   cover: Cover;
   stream: Stream;
   sourceConfig?: Partial<SourceConfig>; // extra player source config (DRM, subtitles, poster…)
 }
+
+/**
+ * A catalog entry, split by how it is delivered.
+ *
+ * The two variants carry different metadata, and pairing a runtime with a live
+ * edge is the kind of contradiction this split makes unconstructable.
+ */
+export type Title =
+  | (TitleBase & {
+      delivery: 'live';
+      liveLabel: string; // "Q3 · 7:42", "On air"
+    })
+  | (TitleBase & {
+      delivery: 'vod';
+      durationMin?: number;
+      progressPct?: number; // continue-watching progress (0–100)
+      rating?: string; // "TV-14", "PG-13", …
+      year?: number;
+    });
 
 /**
  * A section with its titles resolved, as the views receive it.
@@ -144,12 +157,13 @@ export const TITLES: Title[] = [
   // ── LIVE ───────────────────────────────────────────────────────────────
   {
     id: 'live-finals-g6',
+    delivery: 'live',
     title: 'Pacific Finals · Game 6',
     kind: 'game',
     kicker: 'Bitflix Sports · NBA-style Live',
     synopsis:
       "Win or go home. The Los Angeles Surge host the Boston Tide with the series on the line — a wire-to-wire thriller with the league's two MVP front-runners trading blows.",
-    badges: ['LIVE', '4K', 'HDR'],
+    badges: ['4K', 'HDR'],
     liveLabel: 'Q3 · 7:42',
     score: 'LAS 78 — BOS 74',
     tags: ['basketball', 'nba', 'sports', 'live', 'playoffs', 'surge', 'tide'],
@@ -158,12 +172,13 @@ export const TITLES: Title[] = [
   },
   {
     id: 'live-newsroom',
+    delivery: 'live',
     title: 'Bitflix Now',
     kind: 'news',
     kicker: 'Bitflix News · 24/7 Live',
     synopsis:
       'The rolling newsroom. Breaking headlines, market moves and on-the-ground reporting, refreshed continuously throughout the day.',
-    badges: ['LIVE', 'BREAKING'],
+    badges: ['BREAKING'],
     liveLabel: 'On air',
     tags: ['news', 'breaking', 'world', 'markets', 'live', 'newsroom'],
     cover: { from: '#06121F', to: '#02060B', accent: SIGNAL, motif: 'newsroom' },
@@ -171,12 +186,13 @@ export const TITLES: Title[] = [
   },
   {
     id: 'live-derby',
+    delivery: 'live',
     title: 'City Derby · Matchday Live',
     kind: 'game',
     kicker: 'Bitflix Sports · Football Live',
     synopsis:
       'Two halves of the city, one trophy. Harbour United visit Riverside in a sold-out derby with the title race hanging in the balance.',
-    badges: ['LIVE', '4K'],
+    badges: ['4K'],
     liveLabel: "63'",
     score: 'HAR 1 — RIV 1',
     tags: ['football', 'soccer', 'derby', 'sports', 'live', 'premier'],
@@ -187,6 +203,7 @@ export const TITLES: Title[] = [
   // ── CONTINUE WATCHING ────────────────────────────────────────────────────
   {
     id: 'film-aurora',
+    delivery: 'vod',
     title: 'Aurora',
     kind: 'film',
     kicker: 'Bitflix Original Film',
@@ -203,6 +220,7 @@ export const TITLES: Title[] = [
   },
   {
     id: 'doc-summit',
+    delivery: 'vod',
     title: 'The Vertical Mile',
     kind: 'doc',
     kicker: 'Bitflix Documentary',
@@ -221,6 +239,7 @@ export const TITLES: Title[] = [
   // ── TONIGHT'S GAMES / SPORTS ─────────────────────────────────────────────
   {
     id: 'game-tipoff-replay',
+    delivery: 'vod',
     title: 'Surge @ Kings · Full Replay',
     kind: 'highlight',
     kicker: 'NBA-style · Last Night',
@@ -234,6 +253,7 @@ export const TITLES: Title[] = [
   },
   {
     id: 'game-top10',
+    delivery: 'vod',
     title: 'Top 10 Plays of the Week',
     kind: 'highlight',
     kicker: 'Bitflix Sports · Highlights',
@@ -247,6 +267,7 @@ export const TITLES: Title[] = [
   },
   {
     id: 'game-ice-classic',
+    delivery: 'vod',
     title: 'Winter Classic · Frozen Final',
     kind: 'game',
     kicker: 'Bitflix Sports · Hockey',
@@ -263,6 +284,7 @@ export const TITLES: Title[] = [
   // ── THE NEWSROOM ─────────────────────────────────────────────────────────
   {
     id: 'news-markets',
+    delivery: 'vod',
     title: 'Closing Bell',
     kind: 'news',
     kicker: 'Bitflix Business',
@@ -276,6 +298,7 @@ export const TITLES: Title[] = [
   },
   {
     id: 'news-world',
+    delivery: 'vod',
     title: 'The World at Seven',
     kind: 'news',
     kicker: 'Bitflix News · Flagship',
@@ -288,6 +311,7 @@ export const TITLES: Title[] = [
   },
   {
     id: 'news-deepdive',
+    delivery: 'vod',
     title: 'Dateline: The Long Read',
     kind: 'news',
     kicker: 'Bitflix Investigates',
@@ -303,6 +327,7 @@ export const TITLES: Title[] = [
   // ── BITFLIX ORIGINALS ───────────────────────────────────────────────────
   {
     id: 'orig-orbit',
+    delivery: 'vod',
     title: 'Orbit',
     kind: 'original',
     kicker: 'Bitflix Original Series',
@@ -318,6 +343,7 @@ export const TITLES: Title[] = [
   },
   {
     id: 'orig-encore',
+    delivery: 'vod',
     title: 'Encore',
     kind: 'original',
     kicker: 'Bitflix Original Series',
@@ -333,6 +359,7 @@ export const TITLES: Title[] = [
   },
   {
     id: 'orig-tides',
+    delivery: 'vod',
     title: 'Tideline',
     kind: 'original',
     kicker: 'Bitflix Original Series',
@@ -350,6 +377,7 @@ export const TITLES: Title[] = [
   // ── FILMS WE LOVE ─────────────────────────────────────────────────────────
   {
     id: 'film-steel',
+    delivery: 'vod',
     title: 'Tears of Steel',
     kind: 'film',
     kicker: 'Sci-Fi · Modern Classic',
@@ -365,6 +393,7 @@ export const TITLES: Title[] = [
   },
   {
     id: 'film-sintel',
+    delivery: 'vod',
     title: 'Sintel',
     kind: 'film',
     kicker: 'Animated · Modern Classic',
@@ -380,6 +409,7 @@ export const TITLES: Title[] = [
   },
   {
     id: 'film-motion',
+    delivery: 'vod',
     title: 'Art of Motion',
     kind: 'film',
     kicker: 'Action · Free-running',
@@ -397,6 +427,7 @@ export const TITLES: Title[] = [
   // ── DRM LAB (protected — probes which CDM the MCP host's sandbox exposes) ──
   {
     id: 'drm-widevine',
+    delivery: 'vod',
     title: 'Art of Motion · Widevine',
     kind: 'film',
     kicker: 'Bitflix · DRM Lab',
@@ -410,6 +441,7 @@ export const TITLES: Title[] = [
   },
   {
     id: 'drm-playready',
+    delivery: 'vod',
     title: 'Art of Motion · PlayReady',
     kind: 'film',
     kicker: 'Bitflix · DRM Lab',
@@ -492,7 +524,7 @@ function requireTitle(id: string): Title {
 }
 
 export function liveTitles(): Title[] {
-  return TITLES.filter(t => t.badges.includes('LIVE'));
+  return TITLES.filter(t => t.delivery === 'live');
 }
 
 /**
@@ -511,7 +543,7 @@ export function search(query: string): Title[] {
       if (haystack.includes(term)) score += 1;
     }
     // a bare "live" / "news" / "sports" intent should surface live content
-    if (terms.includes('live') && t.badges.includes('LIVE')) score += 3;
+    if (terms.includes('live') && t.delivery === 'live') score += 3;
     return { t, score };
   }).filter(s => s.score > 0);
   scored.sort((a, b) => b.score - a.score);
@@ -544,7 +576,7 @@ export function byCategory(category: string): Title[] {
   const c = category.trim().toLowerCase();
   const syns = CATEGORY_SYNONYMS.get(c) ?? [c];
   return TITLES.filter(
-    t => syns.includes(t.kind) || t.tags.some(tag => syns.includes(tag)) || (c === 'live' && t.badges.includes('LIVE')),
+    t => syns.includes(t.kind) || t.tags.some(tag => syns.includes(tag)) || (c === 'live' && t.delivery === 'live'),
   );
 }
 

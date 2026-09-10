@@ -2,7 +2,15 @@ import '@/index.css';
 import type { PlayerAPI } from 'bitmovin-player';
 import { useEffect, useRef, useState } from 'react';
 import { useDisplayMode } from 'skybridge/web';
-import { BRAND, type Brand, type BrowsePayload, type PlayerPayload, type Rail, type Title } from '../../catalog.js';
+import {
+  BRAND,
+  type Badge,
+  type Brand,
+  type BrowsePayload,
+  type PlayerPayload,
+  type Rail,
+  type Title,
+} from '../../catalog.js';
 import { useCallTool } from '../../helpers.js';
 import { useAutoHeight } from '../hooks.js';
 import type { CastState } from './BitmovinPlayer.js';
@@ -21,22 +29,21 @@ function FooterNote({ brand }: { brand: Brand }) {
   );
 }
 
-function Badges({ items }: { items: string[] }) {
+function Badges({ items }: { items: Badge[] }) {
   return (
     <span className="badges">
-      {items.map((b, i) =>
-        b.toUpperCase() === 'LIVE' ? (
-          <span key={i} className="badge live">
-            {b}
-          </span>
-        ) : (
-          <span key={i} className="badge">
-            {b}
-          </span>
-        ),
-      )}
+      {items.map((b, i) => (
+        <span key={i} className="badge">
+          {b}
+        </span>
+      ))}
     </span>
   );
+}
+
+/** The live marker, which the delivery discriminant carries rather than a badge. */
+function LiveBadge() {
+  return <span className="badge live">LIVE</span>;
 }
 
 function LiveClock() {
@@ -107,23 +114,19 @@ function Card({ t, layout, onPlay }: { t: Title; layout: string; onPlay: (t: Tit
           <div className="disc" dangerouslySetInnerHTML={{ __html: ICON.play }} />
         </div>
         <div className="corner">
-          {t.badges.includes('LIVE') ? (
-            <span className="badge live">LIVE</span>
-          ) : t.badges.includes('NEW') ? (
-            <span className="badge">NEW</span>
-          ) : null}
+          {t.delivery === 'live' ? <LiveBadge /> : t.badges.includes('NEW') ? <span className="badge">NEW</span> : null}
         </div>
       </div>
       <div className="meta">
         <div className="t">{t.title}</div>
         <div className="k">{t.kicker}</div>
-        {layout === 'live' && (t.score || t.liveLabel) ? (
+        {layout === 'live' && (t.score || t.delivery === 'live') ? (
           <div className="liverow">
             {t.score ? <span className="score">{t.score}</span> : null}
-            {t.liveLabel ? <span className="live-clock">{t.liveLabel}</span> : null}
+            {t.delivery === 'live' ? <span className="live-clock">{t.liveLabel}</span> : null}
           </div>
         ) : null}
-        {typeof t.progressPct === 'number' ? (
+        {t.delivery === 'vod' && t.progressPct !== undefined ? (
           <div className="progress">
             <span style={{ width: `${t.progressPct}%` }} />
           </div>
@@ -171,9 +174,10 @@ function Hero({ p, onPlay }: { p: BrowsePayload; onPlay: (t: Title) => void }) {
       <div className="hero-inner">
         <div className="kicker">{t.kicker}</div>
         <div className="metarow" style={{ marginTop: 0, marginBottom: 14 }}>
+          {t.delivery === 'live' ? <LiveBadge /> : null}
           <Badges items={t.badges} />
           {t.score ? <span className="score">{t.score}</span> : null}
-          {t.liveLabel ? <span className="live-clock">{t.liveLabel}</span> : null}
+          {t.delivery === 'live' ? <span className="live-clock">{t.liveLabel}</span> : null}
         </div>
         <h2>{t.title}</h2>
         <p className="syn">{t.synopsis}</p>
@@ -349,19 +353,24 @@ function PlayerView({ p, onBack, onPlay }: { p: PlayerPayload; onBack: () => voi
             <div className="kicker">{t.kicker}</div>
             <h2>{t.title}</h2>
             <div className="metarow">
+              {t.delivery === 'live' ? <LiveBadge /> : null}
               <Badges items={t.badges} />
               {t.score ? <span className="score">{t.score}</span> : null}
-              {t.rating ? <span className="small">{t.rating}</span> : null}
-              {t.year ? (
+              {t.delivery === 'vod' ? (
                 <>
-                  <span className="dotsep">·</span>
-                  <span className="small">{t.year}</span>
-                </>
-              ) : null}
-              {t.durationMin ? (
-                <>
-                  <span className="dotsep">·</span>
-                  <span className="small">{t.durationMin} min</span>
+                  {t.rating ? <span className="small">{t.rating}</span> : null}
+                  {t.year ? (
+                    <>
+                      <span className="dotsep">·</span>
+                      <span className="small">{t.year}</span>
+                    </>
+                  ) : null}
+                  {t.durationMin ? (
+                    <>
+                      <span className="dotsep">·</span>
+                      <span className="small">{t.durationMin} min</span>
+                    </>
+                  ) : null}
                 </>
               ) : null}
             </div>
