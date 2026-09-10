@@ -4,7 +4,12 @@
   "compilerOptions": {
     "paths": {
       "@/*": ["./src/*"]
-    }
+    },
+
+    "noUncheckedIndexedAccess": true,
+    "noImplicitReturns": true,
+    "isolatedModules": true,
+    "allowUnreachableCode": false
   },
 
   "include": ["src", ".skybridge/**/*.d.ts"]

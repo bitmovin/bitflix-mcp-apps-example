@@ -2,7 +2,7 @@ import '@/index.css';
 import type { PlayerAPI } from 'bitmovin-player';
 import { useEffect, useRef, useState } from 'react';
 import { useDisplayMode } from 'skybridge/web';
-import { BRAND, type Brand, type BrowsePayload, type PlayerPayload, type Title } from '../../catalog.js';
+import { BRAND, type Brand, type BrowsePayload, type PlayerPayload, type Rail, type Title } from '../../catalog.js';
 import { useCallTool } from '../../helpers.js';
 import { useAutoHeight } from '../hooks.js';
 import type { CastState } from './BitmovinPlayer.js';
@@ -10,7 +10,6 @@ import { BitmovinPlayerLazy } from './BitmovinPlayerLazy.js';
 import { ICON, coverArt } from './cover.js';
 import { Icon } from './Icon.js';
 
-type Rail = { id: string; title: string; subtitle?: string; layout?: string; items: Title[] };
 type Payload = BrowsePayload | PlayerPayload;
 
 // ── small pieces ───────────────────────────────────────────────────────────
@@ -207,21 +206,36 @@ function Hero({ p, onPlay }: { p: BrowsePayload; onPlay: (t: Title) => void }) {
 
 // ── chips ───────────────────────────────────────────────────────────────────
 type ChipBase = { label: string; key: string };
-/** A nav chip and the tool call it makes, carrying only that tool's arguments. */
+/**
+ * A nav chip and the tool call it makes, carrying only that tool's arguments.
+ */
 type ChipDef =
   | (ChipBase & { tool: 'browse_catalog'; category?: string }) // no category means whole catalog
   | (ChipBase & { tool: 'get_recommendations' | 'whats_live' });
+
+/**
+ * A chip scoped to one category, whose key is that category.
+ */
+const categoryChip = (label: string, category: string): ChipDef => ({
+  label,
+  key: category,
+  tool: 'browse_catalog',
+  category,
+});
+
 const CHIPS: ChipDef[] = [
   { label: 'Home', key: 'home', tool: 'browse_catalog' },
   { label: 'For You', key: 'foryou', tool: 'get_recommendations' },
   { label: 'Live', key: 'live', tool: 'whats_live' },
-  { label: 'Sports', key: 'sports', tool: 'browse_catalog', category: 'sports' },
-  { label: 'News', key: 'news', tool: 'browse_catalog', category: 'news' },
-  { label: 'Films', key: 'films', tool: 'browse_catalog', category: 'films' },
-  { label: 'Originals', key: 'originals', tool: 'browse_catalog', category: 'originals' },
+  categoryChip('Sports', 'sports'),
+  categoryChip('News', 'news'),
+  categoryChip('Films', 'films'),
+  categoryChip('Originals', 'originals'),
 ];
 
-/** The chip to mark active, or none for a screen no chip leads to. */
+/**
+ * The chip to mark active, or none for a screen no chip leads to.
+ */
 function activeChipFor(p: BrowsePayload): string | undefined {
   switch (p.screen) {
     case 'home':
@@ -234,6 +248,11 @@ function activeChipFor(p: BrowsePayload): string | undefined {
       return p.category;
     case 'search':
       return undefined;
+    default: {
+      // Adding a BrowseScreen without a case here fails to compile, naming it.
+      const unhandled: never = p;
+      return unhandled;
+    }
   }
 }
 

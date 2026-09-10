@@ -13,6 +13,8 @@
 // tiles on a TV.
 // ─────────────────────────────────────────────────────────────────────────
 
+import type { SourceConfig } from 'bitmovin-player';
+
 export type StreamType = 'hls' | 'dash';
 
 export interface Stream {
@@ -20,8 +22,10 @@ export interface Stream {
   type: StreamType;
 }
 
-/** A procedural cover-art recipe. The widget draws the artwork from this —
- *  no external image fetches, so nothing to be blocked by the iframe CSP. */
+/**
+ * A procedural cover-art recipe, drawn rather than fetched, so the iframe CSP
+ * has no image request to block.
+ */
 export interface Cover {
   from: string; // gradient start
   to: string; // gradient end
@@ -42,13 +46,28 @@ export type Motif =
 
 export type Kind = 'live' | 'game' | 'news' | 'film' | 'series' | 'highlight' | 'original' | 'doc';
 
+export type Badge =
+  | 'LIVE'
+  | 'NEW'
+  | 'NEW SEASON'
+  | 'BREAKING'
+  | 'REPLAY'
+  | 'EXCLUSIVE'
+  | 'EMMY-WINNER'
+  | '4K'
+  | 'HDR'
+  | 'DOLBY VISION'
+  | 'DRM'
+  | 'WIDEVINE'
+  | 'PLAYREADY';
+
 export interface Title {
   id: string;
   title: string;
   kind: Kind;
   kicker: string; // eyebrow, e.g. "NBA · Conference Finals"
   synopsis: string;
-  badges: string[]; // e.g. ["LIVE", "4K", "HDR"]
+  badges: Badge[];
   rating?: string; // "TV-14", "PG-13", …
   year?: number;
   durationMin?: number; // VOD runtime
@@ -58,8 +77,13 @@ export interface Title {
   tags: string[]; // for search + recommendations
   cover: Cover;
   stream: Stream;
-  sourceConfig?: Record<string, unknown>; // optional Bitmovin source config (DRM, subtitles, poster…)
+  sourceConfig?: Partial<SourceConfig>; // extra player source config (DRM, subtitles, poster…)
 }
+
+/**
+ * A section with its titles resolved, as the views receive it.
+ */
+export type Rail = Omit<Section, 'itemIds'> & { items: Title[] };
 
 export interface Section {
   id: string;
@@ -471,7 +495,9 @@ export function liveTitles(): Title[] {
   return TITLES.filter(t => t.badges.includes('LIVE'));
 }
 
-/** Free-text search across title, kicker, kind, synopsis and tags. */
+/**
+ * Free-text search across title, kicker, kind, synopsis and tags.
+ */
 export function search(query: string): Title[] {
   const q = query.trim().toLowerCase();
   if (!q) return [];
@@ -492,25 +518,31 @@ export function search(query: string): Title[] {
   return scored.map(s => s.t);
 }
 
-/** Resolve a title by exact id first, then by best free-text match. */
+/**
+ * Resolve a title by exact id first, then by best free-text match.
+ */
 export function resolveTitle(idOrQuery: string): Title | undefined {
   return BY_ID.get(idOrQuery) ?? search(idOrQuery)[0];
 }
 
-const CATEGORY_SYNONYMS: Record<string, string[]> = {
-  sports: ['basketball', 'football', 'soccer', 'hockey', 'highlights', 'nba'],
-  news: ['news', 'world', 'markets', 'business', 'breaking'],
-  films: ['film', 'movie', 'cinema'],
-  originals: ['original', 'series'],
-  live: ['live'],
-  documentary: ['documentary', 'doc', 'nature'],
-  drm: ['drm', 'widevine', 'playready', 'protected'],
-};
+// A Map, not an object literal: the key is free text from the caller, and a
+// plain object would resolve "constructor" and "__proto__" to inherited members.
+const CATEGORY_SYNONYMS = new Map<string, string[]>([
+  ['sports', ['basketball', 'football', 'soccer', 'hockey', 'highlights', 'nba']],
+  ['news', ['news', 'world', 'markets', 'business', 'breaking']],
+  ['films', ['film', 'movie', 'cinema']],
+  ['originals', ['original', 'series']],
+  ['live', ['live']],
+  ['documentary', ['documentary', 'doc', 'nature']],
+  ['drm', ['drm', 'widevine', 'playready', 'protected']],
+]);
 
-/** Filter the catalog down to a loose category bucket. */
+/**
+ * Filter the catalog down to a loose category bucket.
+ */
 export function byCategory(category: string): Title[] {
   const c = category.trim().toLowerCase();
-  const syns = CATEGORY_SYNONYMS[c] ?? [c];
+  const syns = CATEGORY_SYNONYMS.get(c) ?? [c];
   return TITLES.filter(
     t => syns.includes(t.kind) || t.tags.some(tag => syns.includes(tag)) || (c === 'live' && t.badges.includes('LIVE')),
   );
@@ -535,9 +567,8 @@ interface BrowsePayloadBase {
   brand: Brand;
   headline: string;
   subhead?: string;
-  /** Title the hero frame leads with. Absent when the screen has no items. */
-  featuredId?: string;
-  sections: { id: string; title: string; subtitle?: string; layout?: string; items: Title[] }[];
+  featuredId?: string; // title the hero frame leads with; absent when the screen has no items
+  sections: Rail[];
   licenseKey: string;
 }
 
@@ -556,8 +587,7 @@ export interface PlayerPayload {
 export interface DiagnosticsPayload {
   view: 'diagnostics';
   brand: Brand;
-  /** Protected titles the panel can attempt, one per key system. */
-  drmTitles: Title[];
+  drmTitles: Title[]; // protected titles the panel can attempt, one per key system
   licenseKey: string;
 }
 
@@ -571,7 +601,9 @@ function hydrate(section: Section) {
   };
 }
 
-/** The full home screen. */
+/**
+ * The full home screen.
+ */
 export function homePayload(licenseKey: string): BrowsePayload {
   return {
     view: 'browse',
@@ -585,10 +617,12 @@ export function homePayload(licenseKey: string): BrowsePayload {
   };
 }
 
-/** A browse screen scoped to a category or free-text query. */
-export function categoryPayload(licenseKey: string, query: string): BrowsePayload {
+/**
+ * A browse screen scoped to a category or free-text query.
+ */
+export function categoryPayload({ licenseKey, query }: { licenseKey: string; query: string }): BrowsePayload {
   const bucket = query.trim().toLowerCase();
-  const isCategory = bucket in CATEGORY_SYNONYMS;
+  const isCategory = CATEGORY_SYNONYMS.has(bucket);
   const results = isCategory ? byCategory(query) : search(query);
   const items = results.length ? results : byCategory('live');
   const common: BrowsePayloadBase = {
@@ -603,7 +637,9 @@ export function categoryPayload(licenseKey: string, query: string): BrowsePayloa
   return isCategory ? { ...common, screen: 'category', category: bucket } : { ...common, screen: 'search' };
 }
 
-/** Live-only browse screen. */
+/**
+ * Live-only browse screen.
+ */
 export function livePayload(licenseKey: string): BrowsePayload {
   const items = liveTitles();
   return {
@@ -618,9 +654,18 @@ export function livePayload(licenseKey: string): BrowsePayload {
   };
 }
 
-/** Personalized recommendations. `context` lets the model bias the rails
- *  (e.g. "in the mood for something short", "loves basketball"). */
-export function recommendationsPayload(licenseKey: string, context?: string): BrowsePayload {
+/**
+ * Personalized recommendations.
+ *
+ * `context` biases the rails, for example "loves basketball".
+ */
+export function recommendationsPayload({
+  licenseKey,
+  context,
+}: {
+  licenseKey: string;
+  context?: string;
+}): BrowsePayload {
   const ctx = (context ?? '').toLowerCase();
   // The titles the recommendations are pitched as following from.
   const continueWatching = [requireTitle('film-aurora'), requireTitle('doc-summit')];
@@ -672,7 +717,9 @@ export function recommendationsPayload(licenseKey: string, context?: string): Br
   };
 }
 
-/** The video-capability probe screen, with the protected titles it can try. */
+/**
+ * The video-capability probe screen, with the protected titles it can try.
+ */
 export function diagnosticsPayload(licenseKey: string): DiagnosticsPayload {
   return {
     view: 'diagnostics',
@@ -682,7 +729,7 @@ export function diagnosticsPayload(licenseKey: string): DiagnosticsPayload {
   };
 }
 
-export function playerPayload(licenseKey: string, title: Title): PlayerPayload {
+export function playerPayload({ licenseKey, title }: { licenseKey: string; title: Title }): PlayerPayload {
   // "Up next" = a few same-kind / shared-tag siblings
   const upNext = TITLES.filter(
     t => t.id !== title.id && (t.kind === title.kind || t.tags.some(tag => title.tags.includes(tag))),

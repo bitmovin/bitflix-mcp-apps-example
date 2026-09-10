@@ -8,8 +8,7 @@ export type PlayerStatus = { state: 'loading' } | { state: 'ready' } | { state: 
 
 export type CastState = { available: boolean; casting: boolean; device?: string };
 
-/** How long a source may take to load before the stage reports a failure. */
-const LOAD_TIMEOUT_MS = 30_000;
+const LOAD_TIMEOUT_MS = 30_000; // how long a source may take to load before the stage reports a failure
 
 export interface BitmovinPlayerProps {
   title: Title;

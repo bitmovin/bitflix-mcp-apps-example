@@ -91,7 +91,7 @@ const server = new McpServer(SERVER_INFO, { capabilities: {} })
     },
     ({ category, query }) => {
       const q = query || category;
-      const p = q ? categoryPayload(KEY, q) : homePayload(KEY);
+      const p = q ? categoryPayload({ licenseKey: KEY, query: q }) : homePayload(KEY);
       return { structuredContent: p, content: [{ type: 'text', text: browseSummary(p) }], isError: false };
     },
   )
@@ -115,7 +115,7 @@ const server = new McpServer(SERVER_INFO, { capabilities: {} })
       _meta: { 'openai/widgetAccessible': true },
     },
     ({ context }) => {
-      const p = recommendationsPayload(KEY, context);
+      const p = recommendationsPayload({ licenseKey: KEY, context });
       return { structuredContent: p, content: [{ type: 'text', text: browseSummary(p) }], isError: false };
     },
   )
@@ -167,7 +167,7 @@ const server = new McpServer(SERVER_INFO, { capabilities: {} })
           isError: false,
         };
       }
-      const p = playerPayload(KEY, title);
+      const p = playerPayload({ licenseKey: KEY, title });
       return { structuredContent: p, content: [{ type: 'text', text: playerSummary(p) }], isError: false };
     },
   )

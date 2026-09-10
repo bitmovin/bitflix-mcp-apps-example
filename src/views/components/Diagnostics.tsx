@@ -9,12 +9,54 @@ import { ICON } from './cover.js';
 import { Icon } from './Icon.js';
 
 type Status = 'yes' | 'no' | 'partial' | 'pending' | 'unknown';
-type Row = { key: string; label: string; status: Status; detail?: string };
+
+type EmeLabel = 'Widevine' | 'PlayReady' | 'FairPlay' | 'ClearKey';
+
+/**
+ * The rows the panel can report on.
+ *
+ * `patch` finds a row by key, so a key it cannot match updates nothing and
+ * leaves that row pending. Naming them makes a mismatch a compile error.
+ */
+type RowKey =
+  | 'mse'
+  | 'mse-worker'
+  | 'worker'
+  | 'wasm'
+  | 'securectx'
+  | 'coi'
+  | 'autoplay'
+  | 'fs-avail'
+  | 'pip-avail'
+  | 'remoteplayback'
+  | 'presentation'
+  | 'fs-host'
+  | 'fs-native'
+  | 'pip'
+  | `eme-${EmeLabel}`;
+
+type Row = { key: RowKey; label: string; status: Status; detail?: string };
 
 const sleep = (ms: number) => new Promise(r => setTimeout(r, ms));
 
+/**
+ * A readable message for a caught value of unknown type.
+ *
+ * A catch binding is `unknown` and need not be an Error. Converting one can
+ * itself throw, on a null-prototype object or a misbehaving `toString`, which
+ * would turn a reported failure into a second one.
+ */
+function errorMessage(e: unknown): string {
+  if (e instanceof Error) return e.message || e.name;
+  try {
+    return String(e);
+  } catch {
+    return `unprintable ${typeof e}`;
+  }
+}
+
 // ── probes ──────────────────────────────────────────────────────────────────
-const EME_KEY_SYSTEMS: [string, string][] = [
+const EME_KEY_SYSTEMS: [EmeLabel, string][] = [
   ['Widevine', 'com.widevine.alpha'],
   ['PlayReady', 'com.microsoft.playready'],
   ['FairPlay', 'com.apple.fps.1_0'],
@@ -37,7 +79,7 @@ async function probeKeySystem(ks: string): Promise<{ ok: boolean; detail: string
     const access = await navigator.requestMediaKeySystemAccess(ks, config);
     return { ok: true, detail: access.keySystem };
   } catch (e) {
-    return { ok: false, detail: (e as Error)?.name || String(e) };
+    return { ok: false, detail: errorMessage(e) };
   }
 }
 
@@ -123,7 +165,7 @@ export function Diagnostics({ payload }: { payload?: DiagnosticsPayload }) {
 
   useAutoHeight(rootRef);
 
-  const patch = (key: string, status: Status, detail?: string) =>
+  const patch = (key: RowKey, status: Status, detail?: string) =>
     setRows(rs => rs.map(r => (r.key === key ? { ...r, status, detail } : r)));
 
   useEffect(() => {
@@ -138,22 +180,15 @@ export function Diagnostics({ payload }: { payload?: DiagnosticsPayload }) {
       );
       patch(
         'mse-worker',
-        mse && (MediaSource as unknown as { canConstructInDedicatedWorker?: boolean }).canConstructInDedicatedWorker
-          ? 'yes'
-          : 'no',
+        mse && MediaSource.canConstructInDedicatedWorker ? 'yes' : 'no',
         'MediaSource.canConstructInDedicatedWorker',
       );
       patch('wasm', typeof WebAssembly !== 'undefined' ? 'yes' : 'no');
       patch('securectx', window.isSecureContext ? 'yes' : 'no');
-      patch(
-        'coi',
-        (window as unknown as { crossOriginIsolated?: boolean }).crossOriginIsolated ? 'yes' : 'no',
-        'needed for SharedArrayBuffer / some codecs',
-      );
-      const gap = (navigator as unknown as { getAutoplayPolicy?: (t: string) => string }).getAutoplayPolicy;
-      if (gap) {
-        const p = gap.call(navigator, 'mediaelement');
-        patch('autoplay', p === 'allowed' ? 'yes' : 'partial', `getAutoplayPolicy → ${p}`);
+      patch('coi', window.crossOriginIsolated ? 'yes' : 'no', 'needed for SharedArrayBuffer / some codecs');
+      const policy = navigator.getAutoplayPolicy?.('mediaelement');
+      if (policy !== undefined) {
+        patch('autoplay', policy === 'allowed' ? 'yes' : 'partial', `getAutoplayPolicy → ${policy}`);
       } else patch('autoplay', 'unknown', 'getAutoplayPolicy() unavailable (muted autoplay generally allowed)');
       patch(
         'fs-avail',
@@ -162,11 +197,7 @@ export function Diagnostics({ payload }: { payload?: DiagnosticsPayload }) {
           ? 'document.fullscreenEnabled = true'
           : 'document.fullscreenEnabled = false — the sandbox iframe has no allow="fullscreen"',
       );
-      patch(
-        'pip-avail',
-        (document as unknown as { pictureInPictureEnabled?: boolean }).pictureInPictureEnabled ? 'yes' : 'no',
-        'document.pictureInPictureEnabled',
-      );
+      patch('pip-avail', document.pictureInPictureEnabled ? 'yes' : 'no', 'document.pictureInPictureEnabled');
       // Real casting primitives (what Google Cast / device handoff actually need).
       const hasRemote = 'remote' in document.createElement('video');
       patch(
@@ -176,8 +207,7 @@ export function Diagnostics({ payload }: { payload?: DiagnosticsPayload }) {
           ? 'HTMLMediaElement.remote present — but still needs allow="presentation" + a device on the network'
           : 'video.remote unavailable — no remote-playback/handoff primitive',
       );
-      const hasPresentation =
-        typeof (window as unknown as { PresentationRequest?: unknown }).PresentationRequest !== 'undefined';
+      const hasPresentation = typeof window.PresentationRequest !== 'undefined';
       patch(
         'presentation',
         hasPresentation ? 'partial' : 'no',
@@ -221,7 +251,7 @@ export function Diagnostics({ payload }: { payload?: DiagnosticsPayload }) {
         key: 'fs-host',
         label: 'host displayMode',
         status: 'no',
-        detail: (e as Error)?.message || String(e),
+        detail: errorMessage(e),
       });
     }
   };
@@ -280,13 +310,13 @@ export function Diagnostics({ payload }: { payload?: DiagnosticsPayload }) {
         key: 'fs-native',
         label: 'native Fullscreen API',
         status: 'no',
-        detail: `true OS fullscreen — BLOCKED: ${(e as Error)?.message || (e as Error)?.name || String(e)}`,
+        detail: `true OS fullscreen — BLOCKED: ${errorMessage(e)}`,
       });
     }
   };
 
   const testPip = async () => {
-    const enabled = (document as unknown as { pictureInPictureEnabled?: boolean }).pictureInPictureEnabled;
+    const enabled = document.pictureInPictureEnabled;
     if (!enabled) {
       setPip({
         key: 'pip',
@@ -296,7 +326,7 @@ export function Diagnostics({ payload }: { payload?: DiagnosticsPayload }) {
       });
       return;
     }
-    const v = rootRef.current?.querySelector('video') as HTMLVideoElement | null;
+    const v = rootRef.current?.querySelector<HTMLVideoElement>('video');
     if (!v) {
       setPip({
         key: 'pip',
@@ -310,7 +340,7 @@ export function Diagnostics({ payload }: { payload?: DiagnosticsPayload }) {
       await v.requestPictureInPicture();
       setPip({ key: 'pip', label: 'Picture-in-Picture', status: 'yes', detail: 'entered PiP' });
     } catch (e) {
-      setPip({ key: 'pip', label: 'Picture-in-Picture', status: 'no', detail: (e as Error)?.message || String(e) });
+      setPip({ key: 'pip', label: 'Picture-in-Picture', status: 'no', detail: errorMessage(e) });
     }
   };
 
@@ -330,6 +360,8 @@ export function Diagnostics({ payload }: { payload?: DiagnosticsPayload }) {
     }
     return `Bitflix video-capability diagnostics for this MCP host sandbox:\n- ${lines.join('\n- ')}`;
   };
+
+  const drmPlayStatus = drmPlay ? drmStatus[drmPlay.id] : undefined;
 
   const extraRow = (r: Row | null) =>
     r ? (
@@ -450,11 +482,9 @@ export function Diagnostics({ payload }: { payload?: DiagnosticsPayload }) {
                 onStatus={s => setDrmStatus(m => ({ ...m, [drmPlay.id]: s }))}
               />
             </div>
-            {drmStatus[drmPlay.id]?.state === 'error' ? (
+            {drmPlayStatus?.state === 'error' ? (
               <div className="diag-detail" style={{ marginTop: 8 }}>
-                {drmStatus[drmPlay.id] && 'detail' in drmStatus[drmPlay.id]
-                  ? (drmStatus[drmPlay.id] as { detail: string }).detail
-                  : ''}
+                {drmPlayStatus.detail}
               </div>
             ) : null}
           </div>
