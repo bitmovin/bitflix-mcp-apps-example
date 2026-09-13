@@ -121,12 +121,24 @@ const VOD_DASH: Stream = {
   type: 'dash',
 };
 
-// Genuinely-LIVE stream for the "live" titles — a real live edge, not VOD
-// dressed up as live. We use DASH-IF's livesim2, which is fully public: CORS *
-// and self-hosted segments, so it plays from inside any MCP host sandbox.
-// (Many live test streams serve their segments from a Referer-locked origin,
-// which 403s from a sandboxed widget; livesim2 has no such restriction.)
-const LIVE_DASH: Stream = { url: 'https://livesim2.dashif.org/livesim2/testpic_2s/Manifest.mpd', type: 'dash' };
+// Cinematic VOD — Sintel, the Blender open movie. A real short film, so the
+// film / original tiles look like actual content instead of a demo loop. Same
+// Bitmovin CDN as the Art of Motion streams (no new CORS surface). NOTE: the
+// playable asset lives under /content/internal/assets/sintel/ — the
+// /content/assets/sintel/ path 403s.
+const SINTEL_HLS: Stream = { url: 'https://cdn.bitmovin.com/content/internal/assets/sintel/hls/playlist.m3u8', type: 'hls' };
+
+// Genuinely-LIVE streams for the "live" titles — real 24/7 channels with actual
+// footage, not a test-pattern card. These are the standard public live HLS
+// endpoints used across player demos (CORS *, segments same-host), so they play
+// from inside any MCP host sandbox and read as real broadcast:
+//   - Red Bull TV: live action-sports channel → the live game tiles
+//   - DW News: live news channel (with English subtitles) → the newsroom tile
+// They are third-party public feeds; the URLs can change over time. (Ruled out:
+// Bitmovin's own live-stream-simulator serves segments from a private CI bucket
+// that 403s publicly, and Unified Streaming's demo plays colour bars.)
+const LIVE_GAMES: Stream = { url: 'https://rbmn-live.akamaized.net/hls/live/590964/BoRB-AT/master.m3u8', type: 'hls' };
+const LIVE_NEWS: Stream = { url: 'https://dwamdstream102.akamaized.net/hls/live/2015525/dwstream102/index.m3u8', type: 'hls' };
 
 // ── DRM (protected) test streams ────────────────────────────────────────────
 // The Bitmovin "Art of Motion" DRM asset is multi-DRM (Widevine + PlayReady in
@@ -168,7 +180,7 @@ export const TITLES: Title[] = [
     score: 'LAS 78 — BOS 74',
     tags: ['basketball', 'nba', 'sports', 'live', 'playoffs', 'surge', 'tide'],
     cover: { from: '#2A0E04', to: '#0B0604', accent: COURT, motif: 'court' },
-    stream: LIVE_DASH,
+    stream: LIVE_GAMES,
   },
   {
     id: 'live-newsroom',
@@ -182,7 +194,7 @@ export const TITLES: Title[] = [
     liveLabel: 'On air',
     tags: ['news', 'breaking', 'world', 'markets', 'live', 'newsroom'],
     cover: { from: '#06121F', to: '#02060B', accent: SIGNAL, motif: 'newsroom' },
-    stream: LIVE_DASH,
+    stream: LIVE_NEWS,
   },
   {
     id: 'live-derby',
@@ -197,7 +209,7 @@ export const TITLES: Title[] = [
     score: 'HAR 1 — RIV 1',
     tags: ['football', 'soccer', 'derby', 'sports', 'live', 'premier'],
     cover: { from: '#04140B', to: '#020806', accent: TURF, motif: 'pitch' },
-    stream: LIVE_DASH,
+    stream: LIVE_GAMES,
   },
 
   // ── CONTINUE WATCHING ────────────────────────────────────────────────────
@@ -216,7 +228,7 @@ export const TITLES: Title[] = [
     progressPct: 42,
     tags: ['film', 'drama', 'original', 'fantasy', 'ocean', 'award'],
     cover: { from: '#10142E', to: '#04050E', accent: VIOLET, motif: 'film' },
-    stream: VOD_HLS,
+    stream: SINTEL_HLS,
   },
   {
     id: 'doc-summit',
@@ -339,7 +351,7 @@ export const TITLES: Title[] = [
     durationMin: 52,
     tags: ['series', 'scifi', 'original', 'space', 'thriller', 'drama'],
     cover: { from: '#0B0A2A', to: '#030210', accent: VIOLET, motif: 'orbit' },
-    stream: VOD_DASH,
+    stream: SINTEL_HLS,
   },
   {
     id: 'orig-encore',
@@ -355,7 +367,7 @@ export const TITLES: Title[] = [
     durationMin: 47,
     tags: ['series', 'music', 'drama', 'original', 'comedy', 'award'],
     cover: { from: '#241608', to: '#0A0703', accent: GOLD, motif: 'stage' },
-    stream: VOD_HLS,
+    stream: SINTEL_HLS,
   },
   {
     id: 'orig-tides',
@@ -371,7 +383,7 @@ export const TITLES: Title[] = [
     durationMin: 55,
     tags: ['series', 'crime', 'thriller', 'original', 'mystery'],
     cover: { from: '#02161C', to: '#010708', accent: MINT, motif: 'summit' },
-    stream: VOD_DASH,
+    stream: SINTEL_HLS,
   },
 
   // ── FILMS WE LOVE ─────────────────────────────────────────────────────────
