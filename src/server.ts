@@ -35,8 +35,8 @@ if (!KEY) console.warn('WARNING: BITMOVIN_PLAYER_KEY not set — playback will f
  */
 const VIEW_CSP = {
   connectDomains: [
-    'https://*.bitmovin.com', // VOD + DRM manifests/segments (Art of Motion, Sintel)
-    'https://*.akamaized.net', // real live channels (Red Bull TV games, DW News)
+    'https://*.bitmovin.com', // VOD + DRM manifests/segments (Art of Motion)
+    'https://*.dashif.org', // DASH-IF livesim2 (public live)
     'https://cwip-shaka-proxy.appspot.com', // Widevine license server (DRM Lab)
     'https://test.playready.microsoft.com', // PlayReady license server (DRM Lab)
     'blob:',
