@@ -39,12 +39,12 @@ export function BitmovinPlayer({ title, licenseKey, onStatus, onPlayerReady, onC
 
     const node = mountRef.current;
     if (!node) return;
-    // Clear leftover player DOM. React 19 StrictMode double-invokes effects in
-    // dev and Bitmovin's destroy() can leave its <video> behind, leaving an
-    // empty black element on top of the live one.
-    node.replaceChildren();
 
-    const player: PlayerAPI = new Player(node, {
+    // One container per player, so teardown can detach this player's DOM alone.
+    const container = document.createElement('div');
+    node.appendChild(container);
+
+    const player: PlayerAPI = new Player(container, {
       key: licenseKey,
       // Autoplay is triggered manually after load() (see below) so the play()
       // promise is caught — config autoplay leaves an uncaught rejection when
@@ -125,16 +125,8 @@ export function BitmovinPlayer({ title, licenseKey, onStatus, onPlayerReady, onC
     return () => {
       cancelled = true;
       clearTimeout(loadTimer);
-      try {
-        player.destroy().catch(() => {});
-      } catch {
-        /* ignore */
-      }
-      try {
-        node.replaceChildren();
-      } catch {
-        /* ignore */
-      }
+      container.remove();
+      void player.destroy().catch(() => {});
     };
     // The callbacks are captured on purpose. Both call sites pass inline
     // arrows, so listing them here would tear down and rebuild the player on
