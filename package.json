@@ -6,7 +6,7 @@
   "engines": {
     "node": ">=22.12.0"
   },
-  "description": "Bitflix — a 'Netflix inside the chat' MCP App, built on Skybridge. A streaming OVP a customer could build on Bitmovin so users browse, get recommendations, and watch live/VOD by talking to Claude or ChatGPT.",
+  "description": "Bitflix — a reference implementation for video in MCP Apps, powered by the Bitmovin Player",
   "scripts": {
     "dev": "skybridge dev",
     "dev:tunnel": "skybridge dev --tunnel",
