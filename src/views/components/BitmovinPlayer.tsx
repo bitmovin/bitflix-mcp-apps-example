@@ -60,7 +60,7 @@ export function BitmovinPlayer({ title, licenseKey, onStatus, onPlayerReady, onC
         receiverVersion: 'v3',
       },
     });
-    UIFactory.buildUI(player);
+    const uiManager = UIFactory.buildUI(player);
 
     const reportCast = (device?: string) => {
       if (cancelled) return;
@@ -125,6 +125,7 @@ export function BitmovinPlayer({ title, licenseKey, onStatus, onPlayerReady, onC
     return () => {
       cancelled = true;
       clearTimeout(loadTimer);
+      uiManager.release();
       container.remove();
       void player.destroy().catch(() => {});
     };
