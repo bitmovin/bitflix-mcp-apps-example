@@ -15,13 +15,17 @@ export function useAutoHeight(ref: RefObject<HTMLElement | null>) {
 
   useEffect(() => {
     const target = ref.current;
-    if (!target) return;
+    if (!target) {
+      return;
+    }
 
     let reported = 0;
     const report = () => {
       const contentHeight = target.scrollHeight;
       const height = Math.ceil(maxHeight != null ? Math.min(contentHeight, maxHeight) : contentHeight);
-      if (height === reported) return;
+      if (height === reported) {
+        return;
+      }
       reported = height;
       // A host that refuses must not surface as a rejection. Forgetting the
       // height lets the next resize retry it rather than suppressing it.

@@ -47,7 +47,9 @@ const sleep = (ms: number) => new Promise(r => setTimeout(r, ms));
  * would turn a reported failure into a second one.
  */
 function errorMessage(e: unknown): string {
-  if (e instanceof Error) return e.message || e.name;
+  if (e instanceof Error) {
+    return e.message || e.name;
+  }
   try {
     return String(e);
   } catch {
@@ -64,7 +66,9 @@ const EME_KEY_SYSTEMS: [EmeLabel, string][] = [
 ];
 
 async function probeKeySystem(ks: string): Promise<{ ok: boolean; detail: string }> {
-  if (!('requestMediaKeySystemAccess' in navigator)) return { ok: false, detail: 'EME API unavailable' };
+  if (!('requestMediaKeySystemAccess' in navigator)) {
+    return { ok: false, detail: 'EME API unavailable' };
+  }
   const config: MediaKeySystemConfiguration[] = [
     {
       initDataTypes: ['cenc', 'sinf', 'keyids'],
@@ -189,7 +193,9 @@ export function Diagnostics({ payload }: { payload?: DiagnosticsPayload }) {
       const policy = navigator.getAutoplayPolicy?.('mediaelement');
       if (policy !== undefined) {
         patch('autoplay', policy === 'allowed' ? 'yes' : 'partial', `getAutoplayPolicy → ${policy}`);
-      } else patch('autoplay', 'unknown', 'getAutoplayPolicy() unavailable (muted autoplay generally allowed)');
+      } else {
+        patch('autoplay', 'unknown', 'getAutoplayPolicy() unavailable (muted autoplay generally allowed)');
+      }
       patch(
         'fs-avail',
         document.fullscreenEnabled ? 'yes' : 'no',
@@ -217,12 +223,16 @@ export function Diagnostics({ payload }: { payload?: DiagnosticsPayload }) {
       );
 
       const worker = await probeWorker();
-      if (!alive) return;
+      if (!alive) {
+        return;
+      }
       patch('worker', worker ? 'yes' : 'no', worker ? 'blob worker executed' : 'blob worker blocked or timed out');
 
       for (const [label, ks] of EME_KEY_SYSTEMS) {
         const r = await probeKeySystem(ks);
-        if (!alive) return;
+        if (!alive) {
+          return;
+        }
         patch(`eme-${label}`, r.ok ? 'yes' : 'no', r.detail);
       }
     })();
@@ -268,7 +278,9 @@ export function Diagnostics({ payload }: { payload?: DiagnosticsPayload }) {
       });
       return;
     }
-    if (!el) return;
+    if (!el) {
+      return;
+    }
     try {
       await el.requestFullscreen();
       await sleep(350);
@@ -304,7 +316,9 @@ export function Diagnostics({ payload }: { payload?: DiagnosticsPayload }) {
         });
       }
       await sleep(1200);
-      if (document.fullscreenElement) document.exitFullscreen().catch(() => {});
+      if (document.fullscreenElement) {
+        document.exitFullscreen().catch(() => {});
+      }
     } catch (e) {
       setFsNative({
         key: 'fs-native',
@@ -349,14 +363,20 @@ export function Diagnostics({ payload }: { payload?: DiagnosticsPayload }) {
     const lines = rows
       .filter(r => r.status !== 'pending')
       .map(r => `${r.label}: ${r.status}${r.detail ? ` (${r.detail})` : ''}`);
-    if (fsHost)
+    if (fsHost) {
       lines.push(`Fullscreen (host displayMode): ${fsHost.status}${fsHost.detail ? ` (${fsHost.detail})` : ''}`);
-    if (fsNative)
+    }
+    if (fsNative) {
       lines.push(`Fullscreen (native API): ${fsNative.status}${fsNative.detail ? ` (${fsNative.detail})` : ''}`);
-    if (pip) lines.push(`PiP test: ${pip.status}${pip.detail ? ` (${pip.detail})` : ''}`);
+    }
+    if (pip) {
+      lines.push(`PiP test: ${pip.status}${pip.detail ? ` (${pip.detail})` : ''}`);
+    }
     for (const t of drmTitles) {
       const s = drmStatus[t.id];
-      if (s) lines.push(`DRM ${t.title}: ${s.state}${s.state === 'error' ? ` (${s.detail})` : ''}`);
+      if (s) {
+        lines.push(`DRM ${t.title}: ${s.state}${s.state === 'error' ? ` (${s.detail})` : ''}`);
+      }
     }
     return `Bitflix video-capability diagnostics for this MCP host sandbox:\n- ${lines.join('\n- ')}`;
   };

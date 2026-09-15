@@ -23,7 +23,9 @@ const SERVER_INFO = { name: 'bitflix', version: '0.1.0' };
  * Bitmovin Player license key, injected into every payload so the view can initialize the player.
  */
 const KEY = env.BITMOVIN_PLAYER_KEY;
-if (!KEY) console.warn('WARNING: BITMOVIN_PLAYER_KEY not set — playback will fail to initialize.');
+if (!KEY) {
+  console.warn('WARNING: BITMOVIN_PLAYER_KEY not set — playback will fail to initialize.');
+}
 
 /**
  * Origins the views may reach beyond the server itself, which Skybridge adds automatically.

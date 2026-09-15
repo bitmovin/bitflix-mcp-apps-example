@@ -519,7 +519,9 @@ export function getTitle(id: string): Title | undefined {
  */
 function requireTitle(id: string): Title {
   const title = BY_ID.get(id);
-  if (!title) throw new Error(`Catalog references unknown title id "${id}"`);
+  if (!title) {
+    throw new Error(`Catalog references unknown title id "${id}"`);
+  }
   return title;
 }
 
@@ -532,18 +534,28 @@ export function liveTitles(): Title[] {
  */
 export function search(query: string): Title[] {
   const q = query.trim().toLowerCase();
-  if (!q) return [];
+  if (!q) {
+    return [];
+  }
   const terms = q.split(/\s+/);
   const scored = TITLES.map(t => {
     const haystack = [t.title, t.kicker, t.kind, t.synopsis, ...t.tags].join(' ').toLowerCase();
     let score = 0;
     for (const term of terms) {
-      if (t.title.toLowerCase().includes(term)) score += 5;
-      if (t.tags.some(tag => tag === term)) score += 4;
-      if (haystack.includes(term)) score += 1;
+      if (t.title.toLowerCase().includes(term)) {
+        score += 5;
+      }
+      if (t.tags.some(tag => tag === term)) {
+        score += 4;
+      }
+      if (haystack.includes(term)) {
+        score += 1;
+      }
     }
     // a bare "live" / "news" / "sports" intent should surface live content
-    if (terms.includes('live') && t.delivery === 'live') score += 3;
+    if (terms.includes('live') && t.delivery === 'live') {
+      score += 3;
+    }
     return { t, score };
   }).filter(s => s.score > 0);
   scored.sort((a, b) => b.score - a.score);

@@ -35,6 +35,8 @@ export default tseslint.config(
   {
     files: ['**/*.ts', '**/*.tsx'],
     rules: {
+      curly: ['error', 'all'],
+
       // Async handlers on void-returning JSX attributes (onClick etc.) are
       // idiomatic; the returned promise is deliberately dropped.
       '@typescript-eslint/no-misused-promises': ['error', { checksVoidReturn: { attributes: false } }],

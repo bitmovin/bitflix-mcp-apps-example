@@ -101,7 +101,9 @@ function Card({ t, layout, onPlay }: { t: Title; layout: string; onPlay: (t: Tit
         }
       }}
       onKeyUp={e => {
-        if (e.key === ' ') onPlay(t);
+        if (e.key === ' ') {
+          onPlay(t);
+        }
       }}
     >
       <div className="art">
@@ -137,7 +139,9 @@ function Card({ t, layout, onPlay }: { t: Title; layout: string; onPlay: (t: Tit
 }
 
 function RailRow({ section, onPlay }: { section: Rail; onPlay: (t: Title) => void }) {
-  if (!section.items.length) return null;
+  if (!section.items.length) {
+    return null;
+  }
   return (
     <div className={`rail layout-${section.layout || 'poster'} reveal`}>
       <div className="rail-head">
@@ -155,7 +159,9 @@ function RailRow({ section, onPlay }: { section: Rail; onPlay: (t: Title) => voi
 
 function Hero({ p, onPlay }: { p: BrowsePayload; onPlay: (t: Title) => void }) {
   const t = p.sections.flatMap(s => s.items).find(x => x.id === p.featuredId) || p.sections[0]?.items[0];
-  if (!t) return null;
+  if (!t) {
+    return null;
+  }
   return (
     // Clicking the frame is a pointer shortcut for the Play button inside it.
     // A button role may not wrap real buttons, and keyboard and screen-reader
@@ -323,12 +329,17 @@ function PlayerView({ p, onBack, onPlay }: { p: PlayerPayload; onBack: () => voi
       : 'Cast unavailable';
   const onCastClick = () => {
     const pl = playerRef.current;
-    if (!pl) return;
+    if (!pl) {
+      return;
+    }
     // Real Bitmovin Player Google Cast API — castVideo() opens the browser's
     // native Cast device chooser; no fake device list.
     try {
-      if (cast.casting) pl.castStop();
-      else pl.castVideo();
+      if (cast.casting) {
+        pl.castStop();
+      } else {
+        pl.castVideo();
+      }
     } catch {
       /* ignore */
     }
@@ -437,12 +448,16 @@ export function BitflixApp({ payload }: { payload?: Payload }) {
 
   const base: Payload | undefined = nav ?? payload;
   const lastBrowseRef = useRef<BrowsePayload | null>(null);
-  if (base && base.view === 'browse') lastBrowseRef.current = base;
+  if (base && base.view === 'browse') {
+    lastBrowseRef.current = base;
+  }
   const licenseKey = (base?.licenseKey || lastBrowseRef.current?.licenseKey) ?? '';
 
   const showResult = (r: Awaited<ReturnType<typeof browseCall.callToolAsync>>) => {
     // An error result resolves with no payload to navigate to.
-    if (r.structuredContent) setNav(r.structuredContent);
+    if (r.structuredContent) {
+      setNav(r.structuredContent);
+    }
   };
 
   const onChip = (c: ChipDef) => {
@@ -460,24 +475,29 @@ export function BitflixApp({ payload }: { payload?: Payload }) {
   const play = (t: Title) => setLocalTitle(t);
   const back = () => {
     setLocalTitle(null);
-    if (lastBrowseRef.current) setNav(lastBrowseRef.current);
-    else
+    if (lastBrowseRef.current) {
+      setNav(lastBrowseRef.current);
+    } else {
       browseCall
         .callToolAsync({})
         .then(showResult)
         .catch(() => {});
+    }
   };
 
   const displayed: Payload | undefined = localTitle
     ? makePlayer(localTitle, lastBrowseRef.current, licenseKey, base)
     : base;
 
-  if (!displayed)
+  if (!displayed) {
     return (
       <div className="bitflix-root">
         <div className="empty">Loading Bitflix…</div>
       </div>
     );
-  if (displayed.view === 'player') return <PlayerView p={displayed} onBack={back} onPlay={play} />;
+  }
+  if (displayed.view === 'player') {
+    return <PlayerView p={displayed} onBack={back} onPlay={play} />;
+  }
   return <BrowseView p={displayed} onPlay={play} onChip={onChip} activeKey={activeChipFor(displayed)} />;
 }

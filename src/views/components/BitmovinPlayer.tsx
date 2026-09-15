@@ -38,7 +38,9 @@ export function BitmovinPlayer({ title, licenseKey, onStatus, onPlayerReady, onC
     onStatus?.({ state: 'loading' });
 
     const node = mountRef.current;
-    if (!node) return;
+    if (!node) {
+      return;
+    }
 
     // One container per player, so teardown can detach this player's DOM alone.
     const container = document.createElement('div');
@@ -63,7 +65,9 @@ export function BitmovinPlayer({ title, licenseKey, onStatus, onPlayerReady, onC
     const uiManager = UIFactory.buildUI(player);
 
     const reportCast = (device?: string) => {
-      if (cancelled) return;
+      if (cancelled) {
+        return;
+      }
       try {
         onCast?.({ available: player.isCastAvailable(), casting: player.isCasting(), device });
       } catch {
@@ -71,7 +75,9 @@ export function BitmovinPlayer({ title, licenseKey, onStatus, onPlayerReady, onC
       }
     };
     player.on(PlayerEvent.Ready, () => {
-      if (cancelled) return;
+      if (cancelled) {
+        return;
+      }
       setLoading(false);
       onStatus?.({ state: 'ready' });
       onPlayerReady?.(player);
@@ -92,9 +98,14 @@ export function BitmovinPlayer({ title, licenseKey, onStatus, onPlayerReady, onC
     player.on(PlayerEvent.CastWaitingForDevice, e => reportCast(e.castPayload.deviceName));
 
     const source: SourceConfig = { title: title.title };
-    if (title.stream.type === 'hls') source.hls = title.stream.url;
-    else source.dash = title.stream.url;
-    if (title.sourceConfig) Object.assign(source, title.sourceConfig);
+    if (title.stream.type === 'hls') {
+      source.hls = title.stream.url;
+    } else {
+      source.dash = title.stream.url;
+    }
+    if (title.sourceConfig) {
+      Object.assign(source, title.sourceConfig);
+    }
 
     let loadTimer: ReturnType<typeof setTimeout> | undefined;
     const timeout = new Promise<never>((_, rej) => {
@@ -108,7 +119,9 @@ export function BitmovinPlayer({ title, licenseKey, onStatus, onPlayerReady, onC
         // Start muted playback ourselves so the play() promise is ours to catch.
         // In a sandbox that blocks even muted autoplay (e.g. the local dev
         // playground) the rejection is benign; the user can press play.
-        if (cancelled) return;
+        if (cancelled) {
+          return;
+        }
         player.play().catch(() => {
           /* ignore */
         });
