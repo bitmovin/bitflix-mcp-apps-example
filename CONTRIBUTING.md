@@ -2,8 +2,8 @@
 
 ## Reporting issues
 
-Open a GitHub issue with steps to reproduce, the MCP host you used (Claude / ChatGPT / the local playground), and any
-console/network logs.
+Report bugs via the [Bitmovin Customer Dashboard](https://dashboard.bitmovin.com/support/tickets), with steps to
+reproduce, the MCP host you used (Claude / ChatGPT / the local playground), and any console/network logs.
 
 ## Pull requests
 
