@@ -92,22 +92,42 @@ npm run dev                 # then open the DevTools playground at http://localh
 - `npm run build` / `npm start`: production build / serve
 - `npm run deploy`: deploy to [Alpic](https://alpic.ai/) for a permanent HTTPS URL
 
-**Player domain allow-listing:** a Bitmovin Player license only works on the domains you register for it. In the
-[Bitmovin dashboard](https://dashboard.bitmovin.com/player/licenses), allow-list whatever host serves the widget:
-the MCP host's sandbox domain (e.g. `*.claudemcpcontent.com`, `*.oaiusercontent.com`), your tunnel domain, or your
-deploy host.
+**Player domain allow-listing:**
+
+A Bitmovin Player license only works on the domains you register for it in the
+[Bitmovin dashboard](https://dashboard.bitmovin.com/player/licenses).
+
+- Allow-list the MCP host's sandbox domain, i.e.
+  `*.claudemcpcontent.com` for Claude and `*.oaiusercontent.com` for ChatGPT.
+
+- When testing on the DevTools playground in a web browser on a non-localhost domain (tunnel or a deployed URL), also
+  allow-list that domain.
 
 ### Connect to your MCP host (e.g. Claude or ChatGPT)
 
-Run `npm run dev:tunnel` (or deploy) and add the resulting HTTPS URL (ending with `/mcp`) as a custom connector in
-your Claude/ChatGPT app. Then open a chat and write _"open Bitflix"_, _"what's live?"_, _"recommend something short"_,
-_"play the finals"_, _"cast it to the living room TV."_
+1. Run `npm run dev:tunnel` to get a public URL to your MCP server, e.g. `https://foo-bar-42.alpic.dev/mcp`
+2. Add this URL as a custom MCP/connector in your Claude/ChatGPT app
+3. Open a new chat and write _"open Bitflix"_, _"what's live?"_, _"recommend something short"_
 
-## Limitations
+### Troubleshooting
 
-The MCP host (e.g. Claude, ChatGPT) controls the widget sandbox's capabilities. Those capabilities vary between hosts,
-and they shift as the MCP specification and the host implementations evolve. Depending on the host, these features
-may behave differently or not work at all:
+If the MCP app does not render:
+
+- Use the Claude or ChatGPT app. Not every MCP host renders MCP Apps views; some may show only the tool call and
+  its text result.
+- Update the Claude/ChatGPT app. MCP Apps support is new, and older versions may not render views.
+- Open the MCP URL (e.g. `https://foo-bar-42.alpic.dev/mcp`) in a web browser. A running server answers with a
+  small JSON error (`Method not allowed`).
+- If run with `npm run dev`, open the MCP URL without the `/mcp` path to reach the DevTools playground and run the
+  tool there. If the view renders, the server is fine and the problem is on the host app side.
+- Remove and re-add the MCP connector in your host app.
+
+## Known Issues & Limitations
+
+The MCP host (e.g. Claude, ChatGPT) controls the widget sandbox's capabilities. The
+[MCP Apps specification](https://apps.extensions.modelcontextprotocol.io) is still under active development, so those
+capabilities currently vary between hosts and shift as the specification and the host implementations evolve.
+Depending on which host is used, the following features may behave differently or not work at all:
 
 - Fullscreen
 - Autoplay with sound
