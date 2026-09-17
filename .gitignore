@@ -11,6 +11,8 @@ dist/
 .alpic/
 tsconfig.tsbuildinfo
 
+.idea/
+
 # misc
 *.log
 .DS_Store
