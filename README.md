@@ -12,7 +12,7 @@ Bitflix is built on the [Skybridge](https://github.com/alpic-ai/skybridge) React
 so you can run it in the local playground, expose it through a dev tunnel, or deploy it to a permanent URL.
 The [Bitmovin Player](https://bitmovin.com/video-player/) handles video playback directly in the chat widget.
 
-<img height="1000" alt="Screenshot 2026-09-14 at 18 00 31" src="https://github.com/user-attachments/assets/3acf513e-cf05-4836-aa30-7629426e28da" />
+<img width="800" alt="Bitflix widget in a Claude chat" src="docs/screenshot.png" />
 
 ## What's in the box
 
