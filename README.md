@@ -84,10 +84,10 @@ Requires Node 22.12+ (24+ is recommended).
 ```bash
 npm ci
 cp .env.example .env        # create .env file and add your own BITMOVIN_PLAYER_KEY
-npm run dev                 # DevTools playground at http://localhost:3000, run tools, see views
+npm run dev                 # then open the DevTools playground at http://localhost:3000
 ```
 
-- `npm run dev`: local DevTools playground at port `3000` (run each tool, switch theme/locale/display mode, audit CSP)
+- `npm run dev`: local DevTools playground at port `3000` (run each tool, audit CSP, etc.)
 - `npm run dev:tunnel`: same, exposed over a stable tunnel you can add to Claude/ChatGPT
 - `npm run build` / `npm start`: production build / serve
 - `npm run deploy`: deploy to [Alpic](https://alpic.ai/) for a permanent HTTPS URL

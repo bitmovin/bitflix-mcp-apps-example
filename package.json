@@ -8,8 +8,8 @@
   },
   "description": "Bitflix — a reference implementation for video in MCP Apps, powered by the Bitmovin Player",
   "scripts": {
-    "dev": "skybridge dev",
-    "dev:tunnel": "skybridge dev --tunnel",
+    "dev": "NODE_OPTIONS=--disable-warning=DEP0190 skybridge dev --no-open",
+    "dev:tunnel": "NODE_OPTIONS=--disable-warning=DEP0190 skybridge dev --no-open --tunnel",
     "build": "skybridge build",
     "start": "skybridge start",
     "deploy": "alpic deploy",
