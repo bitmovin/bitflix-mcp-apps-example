@@ -1,6 +1,6 @@
 MIT License
 
-Copyright (c) 2026 Bitmovin
+Copyright (c) 2026 Bitmovin Inc.
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -19,12 +19,3 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
-
----
-
-NOTE ON THE BITMOVIN PLAYER SDK: This project depends on the `bitmovin-player`
-npm package, which is proprietary and commercially licensed by Bitmovin — it is
-NOT covered by this MIT license. To run this app you must supply your own
-Bitmovin Player license key and comply with the Bitmovin Player license terms
-(https://bitmovin.com/player-license/). The MIT license above applies only to
-the source code in this repository, not to the Bitmovin Player SDK.
