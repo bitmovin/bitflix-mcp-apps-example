@@ -19,7 +19,8 @@ The [Bitmovin Player](https://bitmovin.com/video-player/) handles video playback
 ```
 src/
 ├── catalog.ts          # content: titles, public test streams, sections, search/recommend
-├── server.ts           # McpServer + 5 tools (registerTool), view CSP, license-key injection
+├── index.ts            # entry point: runs the app
+├── server.ts           # Skybridge app + 5 tools, CSP
 ├── env.ts              # typed env (BITMOVIN_PLAYER_KEY)
 ├── helpers.ts          # generateHelpers<AppType>() → typed useToolInfo / useCallTool
 └── views/

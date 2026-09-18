@@ -1,6 +1,6 @@
+import { skybridge } from '@skybridge/vite-plugin';
 import react from '@vitejs/plugin-react';
 import path from 'node:path';
-import { skybridge } from 'skybridge/vite';
 import { defineConfig, type PluginOption } from 'vite';
 
 export default defineConfig({

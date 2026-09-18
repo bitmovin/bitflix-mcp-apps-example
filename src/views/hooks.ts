@@ -1,5 +1,5 @@
 import { type RefObject, useEffect } from 'react';
-import { useLayout, useRequestSize } from 'skybridge/web';
+import { useRequestSize, useViewport } from 'skybridge/web';
 
 /**
  * Keep the host informed of the referenced element's content height, so it can
@@ -11,7 +11,7 @@ import { useLayout, useRequestSize } from 'skybridge/web';
  */
 export function useAutoHeight(ref: RefObject<HTMLElement | null>) {
   const requestSize = useRequestSize();
-  const { maxHeight } = useLayout();
+  const { maxHeight } = useViewport();
 
   useEffect(() => {
     const target = ref.current;
