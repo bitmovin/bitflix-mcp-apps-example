@@ -138,13 +138,6 @@ Depending on which host is used, the following features may behave differently o
 
 Run the `run_diagnostics` tool in your host to see what it permits.
 
-## Making it real (what a production OVP would change)
-
-1. Back `catalog.ts` with a real CMS/MAM + entitlements.
-2. Replace `recommendationsPayload` with a real personalization service.
-3. Real DRM (Widevine/FairPlay/PlayReady) + per-session tokens via the player `sourceConfig`.
-4. Bitmovin Analytics in the player config for QoE/engagement.
-
 ## Licensing
 
 The source code in this repository is released under the [MIT License](./LICENSE).
