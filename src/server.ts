@@ -74,7 +74,7 @@ const server = new McpServer(SERVER_INFO, { capabilities: {} })
     {
       name: 'browse_catalog',
       description: [
-        'Open the Bitflix streaming app — a Netflix-style home screen rendered inline in the chat.',
+        'Open the Bitflix streaming app — a streaming service that lives inside the chat.',
         "Call this whenever the user wants to see what's on, browse, or open Bitflix.",
         "No arguments returns the full home screen (live now, continue watching, tonight's games,",
         'the newsroom, originals, films). Pass `category` (sports, news, films, originals, live,',
