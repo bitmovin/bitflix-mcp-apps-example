@@ -1,4 +1,4 @@
-import '@/index.css';
+import '@/views/css/index.css';
 import { useEffect, useRef, useState } from 'react';
 import { useDisplayMode } from 'skybridge/web';
 import type { DiagnosticsPayload, Title } from '../../catalog.js';

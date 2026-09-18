@@ -22,9 +22,9 @@ src/
 ├── server.ts           # McpServer + 5 tools (registerTool), view CSP, license-key injection
 ├── env.ts              # typed env (BITMOVIN_PLAYER_KEY)
 ├── helpers.ts          # generateHelpers<AppType>() → typed useToolInfo / useCallTool
-├── index.css           # the broadcast OTT design system
 └── views/
     ├── browse.tsx · recommend.tsx · live.tsx · player.tsx · diagnostics.tsx  # one entry per tool
+    ├── css/index.css       # stylesheet (theme, rails, tiles, chips, player stage)
     ├── hooks.ts            # view hooks
     └── components/
         ├── BitflixApp.tsx          # shared widget: browse + player + cast + chips

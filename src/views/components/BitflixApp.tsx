@@ -1,4 +1,4 @@
-import '@/index.css';
+import '@/views/css/index.css';
 import type { PlayerAPI } from 'bitmovin-player';
 import { useEffect, useRef, useState } from 'react';
 import { useDisplayMode } from 'skybridge/web';
