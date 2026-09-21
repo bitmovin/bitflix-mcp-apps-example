@@ -1,4 +1,4 @@
-# Bitflix: a streaming service that lives inside the chat
+# Bitflix - MCP Apps Example Application
 
 Bitflix is a fictional streaming network (sports · news · films · originals) shipped as an
 [MCP App](https://modelcontextprotocol.io).
