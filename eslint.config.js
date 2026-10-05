@@ -29,6 +29,32 @@ export default tseslint.config(
     },
   },
   {
+    // Discover's views and components follow the full recommended hooks preset.
+    files: ['src/views/components/discover/**/*.tsx', 'src/views/{discover,film,reel}.tsx'],
+    ...reactHooks.configs.flat['recommended-latest'],
+  },
+  {
+    // Discover's views receive films in tool results. Importing its catalogue,
+    // search or screen modules would ship server code and data to the browser;
+    // src/discover/model.ts (types and pure helpers) is the only bridge.
+    files: ['src/views/**/*.ts', 'src/views/**/*.tsx'],
+    rules: {
+      '@typescript-eslint/no-restricted-imports': [
+        'error',
+        {
+          patterns: [
+            {
+              group: ['**/discover/catalog.js', '**/discover/search.js', '**/discover/screens.js', '**/server.js'],
+              allowTypeImports: true,
+              message:
+                'Discover views get films from tool results. Import shared types and helpers from discover/model.js.',
+            },
+          ],
+        },
+      ],
+    },
+  },
+  {
     files: ['**/*.tsx'],
     ...jsxA11y.flatConfigs.recommended,
   },
@@ -40,6 +66,14 @@ export default tseslint.config(
       // Async handlers on void-returning JSX attributes (onClick etc.) are
       // idiomatic; the returned promise is deliberately dropped.
       '@typescript-eslint/no-misused-promises': ['error', { checksVoidReturn: { attributes: false } }],
+    },
+  },
+  {
+    files: ['test/**/*.ts'],
+    rules: {
+      // node:test's describe/it return promises the runner itself tracks;
+      // awaiting or voiding every call would only add noise.
+      '@typescript-eslint/no-floating-promises': 'off',
     },
   },
 );

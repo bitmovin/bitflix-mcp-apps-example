@@ -39,10 +39,20 @@ jobs:
       - name: Lint
         run: npm run lint
 
+      # The build type-checks src only; this also covers the tests.
+      - name: Typecheck
+        run: npm run typecheck
+
       # Type-checks the server and the views, and regenerates the view registry
       # for verification in next step.
       - name: Build
         run: npm run build
+
+      # Unit tests for Bitflix Discover, plus an MCP integration test that boots
+      # the built server and checks the plugin-extension metadata on the wire.
+      # --ignore-scripts skips pretest:mcp, since the step above already built.
+      - name: Test
+        run: npm run test:unit && npm run test:mcp --ignore-scripts
 
       - name: Verify view registry is up to date
         run: git diff --exit-code -- .skybridge/views.d.ts

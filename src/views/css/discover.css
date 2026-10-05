@@ -1,0 +1,358 @@
+/* Bitflix Discover — styles for discovery, previews and the trailer reel.
+   Builds on index.css (the shared Bitflix theme): same tokens, same rails,
+   cards, hero and buttons. Only what is new to this example lives here. */
+
+/* Loaded from here, not from the components, so the theme always comes first
+   and these rules win ties. An import sorter reordering component imports
+   would otherwise flip the cascade. */
+@import './index.css';
+
+/* ── Chrome ──────────────────────────────────────────────────────────── */
+.discover-tag {
+  font-family: var(--display);
+  font-weight: 700;
+  font-size: 13px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--signal);
+  padding: 4px 10px;
+  border: 1px solid rgba(87, 224, 214, 0.35);
+  border-radius: 999px;
+}
+
+/* In fullscreen (global entry point) the host gives us the whole surface. */
+.discover-root.is-fullscreen {
+  max-width: 1280px;
+  padding-top: 24px;
+}
+
+/* ── Search ──────────────────────────────────────────────────────────── */
+.search {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 4px 0 14px;
+  padding: 6px 6px 6px 14px;
+  background: var(--panel);
+  border: 1px solid var(--line-strong);
+  border-radius: 12px;
+  color: var(--ink-dim);
+}
+.search:focus-within {
+  border-color: var(--signal-dim);
+}
+.search > span svg {
+  width: 18px;
+  height: 18px;
+  display: block;
+}
+.search input {
+  flex: 1;
+  min-width: 0;
+  background: transparent;
+  border: 0;
+  outline: none;
+  color: var(--ink);
+  font-family: var(--body);
+  font-size: 14.5px;
+}
+.search input::placeholder {
+  color: var(--ink-faint);
+}
+.search-go {
+  font-family: var(--body);
+  font-weight: 700;
+  font-size: 13px;
+  color: #140a06;
+  background: linear-gradient(100deg, var(--ember-1), var(--ember-2));
+  border: 0;
+  border-radius: 9px;
+  padding: 9px 14px;
+  cursor: pointer;
+}
+.headline.is-busy {
+  opacity: 0.55;
+  transition: opacity 0.2s var(--ease);
+}
+
+/* ── Cards are buttons here: reset the UA button styles ─────────────── */
+.film-card {
+  font: inherit;
+  color: inherit;
+  text-align: left;
+  padding: 0;
+  cursor: pointer;
+}
+.film-card:focus-visible {
+  outline: 2px solid var(--signal);
+  outline-offset: 3px;
+}
+
+.badge.preview-badge {
+  color: #04211e;
+  background: var(--signal);
+  border-color: transparent;
+}
+.card .corner.preview-badge {
+  backdrop-filter: none;
+}
+
+/* ── Film detail ─────────────────────────────────────────────────────── */
+.film-view .back {
+  margin-bottom: 14px;
+}
+.film-bar {
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+  margin: 16px 2px 22px;
+  flex-wrap: wrap;
+}
+.film-bar .titleblock {
+  flex: 1;
+  min-width: 240px;
+}
+.film-bar h2 {
+  font-family: var(--display);
+  font-weight: 800;
+  font-size: clamp(26px, 5vw, 40px);
+  line-height: 0.95;
+  letter-spacing: 0.01em;
+}
+.film-bar .metarow {
+  margin-top: 10px;
+}
+.film-bar .syn {
+  color: var(--ink-dim);
+  font-size: 14px;
+  line-height: 1.55;
+  margin-top: 10px;
+  max-width: 64ch;
+}
+.film-bar .controls {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.hero.no-preview {
+  min-height: 240px;
+}
+
+/* ── Preview player overlays ─────────────────────────────────────────── */
+/* The app renders its own error card (with the watch hand-off), so the player
+   UI's error overlay would only repeat the same message underneath it. */
+.preview-stage .bmpui-ui-errormessage-overlay {
+  display: none;
+}
+.preview-error-detail {
+  max-width: 52ch;
+  margin-top: 10px;
+  font-size: 11px;
+  line-height: 1.45;
+  color: var(--ink-faint);
+  overflow-wrap: anywhere;
+}
+.preview-stage {
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+}
+.preview-chip {
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  z-index: 15;
+  font-size: 11.5px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  color: var(--ink);
+  background: rgba(8, 8, 11, 0.62);
+  backdrop-filter: blur(6px);
+  border: 1px solid var(--line-strong);
+  border-radius: 999px;
+  padding: 5px 10px;
+  pointer-events: none;
+  font-variant-numeric: tabular-nums;
+}
+.preview-end {
+  position: absolute;
+  inset: 0;
+  z-index: 20; /* above the player UI's own layers */
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 20px;
+  text-align: center;
+  background: radial-gradient(70% 70% at 50% 45%, rgba(255, 90, 40, 0.18), transparent 72%), rgba(6, 6, 9, 0.9);
+  animation: preview-end-in 0.35s var(--ease) both;
+}
+@keyframes preview-end-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .preview-end {
+    animation: none;
+  }
+}
+.preview-end-kicker {
+  font-size: 11.5px;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--signal);
+}
+.preview-end-title {
+  font-family: var(--display);
+  font-weight: 800;
+  font-size: clamp(24px, 5vw, 38px);
+  line-height: 1;
+}
+.preview-end-actions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  justify-content: center;
+  margin-top: 6px;
+}
+
+/* ── Trailer reel (side panel) ───────────────────────────────────────── */
+.reel-root {
+  max-width: 720px;
+}
+.reel-count {
+  font-size: 12.5px;
+  color: var(--ink-dim);
+  font-variant-numeric: tabular-nums;
+}
+.reel-auto {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: var(--ink-dim);
+  margin: -8px 2px 16px;
+  cursor: pointer;
+}
+.reel-auto input {
+  /* A small switch in the app's own style rather than the browser checkbox. */
+  appearance: none;
+  position: relative;
+  flex: none;
+  width: 34px;
+  height: 20px;
+  margin: 0;
+  border-radius: 999px;
+  background: var(--panel-2);
+  border: 1px solid var(--line-strong);
+  cursor: pointer;
+  transition: background 0.2s var(--ease);
+}
+.reel-auto input::after {
+  content: '';
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: var(--ink-dim);
+  transition:
+    transform 0.2s var(--ease),
+    background 0.2s var(--ease);
+}
+.reel-auto input:checked {
+  background: linear-gradient(100deg, var(--ember-1), var(--ember-2));
+  border-color: transparent;
+}
+.reel-auto input:checked::after {
+  transform: translateX(14px);
+  background: #fff;
+}
+.reel-auto input:focus-visible {
+  outline: 2px solid var(--signal);
+  outline-offset: 2px;
+}
+.reel-queue {
+  list-style: none;
+  display: grid;
+  gap: 8px;
+  margin-bottom: 20px;
+}
+.reel-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 8px;
+  font: inherit;
+  color: var(--ink);
+  text-align: left;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  cursor: pointer;
+  transition:
+    border-color 0.2s var(--ease),
+    background 0.2s var(--ease);
+}
+.reel-item:hover {
+  border-color: var(--line-strong);
+  background: var(--panel-2);
+}
+.reel-item.is-current {
+  border-color: var(--ember-1);
+}
+.reel-item:focus-visible {
+  outline: 2px solid var(--signal);
+  outline-offset: 2px;
+}
+.reel-thumb {
+  position: relative;
+  flex: none;
+  width: 72px;
+  aspect-ratio: 16 / 9;
+  border-radius: 8px;
+  overflow: hidden;
+}
+.reel-thumb svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+.reel-text {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
+.reel-text .t {
+  font-family: var(--display);
+  font-weight: 700;
+  font-size: 16px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.reel-text .k {
+  font-size: 12px;
+  color: var(--ink-faint);
+}
+
+@media (max-width: 560px) {
+  .search input {
+    font-size: 14px;
+  }
+  .film-bar .controls,
+  .film-bar .controls .btn {
+    width: 100%;
+  }
+  .film-bar .controls .btn {
+    justify-content: center;
+  }
+}

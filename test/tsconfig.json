@@ -1,0 +1,11 @@
+{
+  // Tests import from ../src, but the root config pins rootDir to src (inherited
+  // from skybridge/tsconfig), so they get their own project. ESLint's project
+  // service picks this file up for everything under test/.
+  "extends": "../tsconfig.json",
+  "compilerOptions": {
+    "rootDir": "..",
+    "noEmit": true
+  },
+  "include": ["./**/*.ts", "../src", "../.skybridge/**/*.d.ts"]
+}

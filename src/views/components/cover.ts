@@ -1,5 +1,6 @@
 // Generative cover art — bespoke per genre, drawn as SVG strings. No stock
 // images, so nothing for the iframe CSP to block, and every tile feels designed.
+// Shared by Bitflix and Bitflix Discover.
 import type { Cover, Motif } from '../../catalog.js';
 
 let UID = 0;
@@ -29,7 +30,18 @@ const DOTS: [number, number, number, number][] = [
   [242, 182, 1.7, 0.4],
 ];
 
-export function coverArt(c: Cover, glyph = '', opts: { hero?: boolean } = {}): string {
+// Colours are interpolated into the markup below, so anything but #rrggbb is
+// replaced: a cover recipe can never inject markup into the widget.
+const HEX = /^#[0-9a-f]{6}$/i;
+const colour = (value: string, fallback: string) => (HEX.test(value) ? value : fallback);
+
+export function coverArt(cover: Cover, glyph = '', opts: { hero?: boolean } = {}): string {
+  const c: Cover = {
+    ...cover,
+    from: colour(cover.from, '#111111'),
+    to: colour(cover.to, '#000000'),
+    accent: colour(cover.accent, '#ffffff'),
+  };
   const id = `m${UID++}`;
   const a = c.accent;
   const hero = !!opts.hero;
@@ -135,4 +147,8 @@ export const ICON = {
   cast: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 16a6 6 0 0 1 6 6M2 12a10 10 0 0 1 10 10M2 20h.01"/><rect x="2" y="3" width="20" height="14" rx="2"/></svg>`,
   tv: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="13" rx="2"/><path d="M8 21h8M12 17v4"/></svg>`,
   phone: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="2" width="12" height="20" rx="2.5"/><path d="M11 18h2"/></svg>`,
+  external: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 4h6v6M20 4l-9 9"/><path d="M19 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1h5"/></svg>`,
+  search: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="11" cy="11" r="6.5"/><path d="M20 20l-4.2-4.2"/></svg>`,
+  replay: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12a8 8 0 1 0 2.4-5.7"/><path d="M4 4v4h4"/></svg>`,
+  next: `<svg viewBox="0 0 24 24" fill="currentColor"><path d="M6 5v14l9-7zM16 5h2v14h-2z"/></svg>`,
 } as const;

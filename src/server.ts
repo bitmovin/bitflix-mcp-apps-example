@@ -12,6 +12,17 @@ import {
   recommendationsPayload,
   resolveTitle,
 } from './catalog.js';
+import { BRAND, STREAM_ORIGINS, WATCH_ORIGINS, getFilm } from './discover/catalog.js';
+import {
+  type DiscoverPayload,
+  type FilmPayload,
+  GENRES,
+  QUERY_MAX_CHARS,
+  type ReelPayload,
+  type ViewMeta,
+} from './discover/model.js';
+import { discoverPayload, echo, filmPayload, reelPayload } from './discover/screens.js';
+import { resolveFilm } from './discover/search.js';
 import { env } from './env.js';
 
 /**
@@ -53,6 +64,80 @@ const VIEW_CSP = {
     'data:',
   ],
 };
+
+// ── Bitflix Discover ──────────────────────────────────────────────────────
+// Content discovery: browse and search an open-movie catalogue, watch a short
+// preview in the chat, then link out to where the full film plays. No DRM.
+// Wired to the OpenAI plugin extensions: `discover` is the app's global entry
+// point (left nav, fullscreen) and `trailer_reel` its thread entry point (side
+// panel). ChatGPT allows one of each per app. See src/discover/.
+
+/**
+ * Unlike the Bitflix payloads, Discover sends the player license key in each
+ * tool result's `_meta`, which only the widget reads, not in
+ * `structuredContent`, which hosts also hand to the model.
+ */
+const VIEW_META: ViewMeta = { licenseKey: KEY };
+
+/**
+ * Origins the Discover views may reach beyond the server itself, which Skybridge adds automatically.
+ *
+ * - `connectDomains`: manifests, segments and subtitles from the catalogue's
+ *   STREAM_ORIGINS (clear streams only, no DRM), plus the Bitmovin Player's
+ *   license check;
+ * - `resourceDomains`: the Google Fonts the theme loads, and `blob:` for the
+ *   player's Media Source playback;
+ * - `redirectDomains`: where the "watch" links go, derived from the catalogue,
+ *   so ChatGPT opens them without its safe-link interstitial.
+ *
+ * A stream origin absent from here is blocked by the sandbox.
+ */
+const DISCOVER_CSP = {
+  connectDomains: [...STREAM_ORIGINS, 'https://licensing.bitmovin.com', 'blob:', 'data:'],
+  resourceDomains: ['https://fonts.googleapis.com', 'https://fonts.gstatic.com', 'blob:', 'data:'],
+  redirectDomains: WATCH_ORIGINS,
+};
+
+/**
+ * OpenAI plugin extensions (DevDay 2026), declared through raw `_meta` because
+ * Skybridge 2.0.x has no first-class field for them yet.
+ *
+ * - Entry points go on the TOOL as `_meta["openai/ui"].entrypoints`. ChatGPT
+ *   calls an entry-point tool with `{}` when the user clicks it, so every input
+ *   on these tools must be optional.
+ * - Display modes go on the VIEW RESOURCE as `_meta["openai/ui"]`, so the host
+ *   knows inline vs fullscreen before it renders. Never put a `ui` key in a
+ *   view's `_meta`: Skybridge spreads it over the generated `ui` block and
+ *   would drop the CSP.
+ *
+ * Hosts that do not implement the extensions (Claude, and others) ignore the
+ * `openai/ui` keys and render the same views inline, as plain MCP Apps.
+ *
+ * Spec: https://github.com/openai/mcp-extensions/blob/main/docs/spec.md
+ */
+const INLINE_OR_FULLSCREEN = { 'openai/ui': { availableDisplayModes: ['inline', 'fullscreen'] } };
+const GLOBAL_ENTRYPOINT = { 'openai/ui': { entrypoints: [{ type: 'global' }] } };
+const THREAD_ENTRYPOINT = { 'openai/ui': { entrypoints: [{ type: 'thread' }] } };
+
+const QUERY = z.string().trim().max(QUERY_MAX_CHARS);
+const READ_ONLY = { readOnlyHint: true, openWorldHint: false, destructiveHint: false };
+
+function discoverSummary(p: DiscoverPayload): string {
+  const titles = [...new Set(p.rails.flatMap(r => r.items.map(f => f.title)))].slice(0, 12).join(', ');
+  return `${BRAND.name} is showing "${p.headline}". Films shown: ${titles}. Each film can be previewed in the app where a preview exists, and watched in full on ${BRAND.watchProvider}.`;
+}
+
+function filmSummary(p: FilmPayload): string {
+  const f = p.film;
+  const preview = f.preview
+    ? `A ${f.preview.durationSec}-second preview is playing in the app.`
+    : 'No in-app preview is hosted for this film.';
+  return `Showing "${f.title}" (${f.year}, ${f.genre}): ${f.logline} ${preview} The full film is free to watch on ${BRAND.watchProvider}: ${f.watchUrl}`;
+}
+
+function reelSummary(p: ReelPayload): string {
+  return `The Trailer Reel is playing previews back to back: ${p.films.map(f => f.title).join(', ')}. Each links to the full film on ${BRAND.watchProvider}.`;
+}
 
 function browseSummary(p: BrowsePayload): string {
   const rails = p.sections.map(s => s.title).join(', ');
@@ -179,6 +264,103 @@ export const app = new Skybridge({
           }
           const p = playerPayload({ licenseKey: KEY, title });
           return { structuredContent: p, content: [{ type: 'text', text: playerSummary(p) }], isError: false };
+        },
+      )
+      // ── discover — global entry point (left nav bar, opens fullscreen) ──
+      .registerTool(
+        {
+          name: 'discover',
+          title: 'Discover',
+          description: [
+            'Open Bitflix Discover: browse and search a catalogue of films, preview them, and get a link to watch',
+            "the full film. Call when the user wants to find something to watch, browse films, or asks what's good.",
+            `No arguments opens the home screen. Pass \`genre\` to filter (${GENRES.join(', ')}),`,
+            "or `query` to search by title or mood (e.g. 'dragons', 'something funny'). The user can tap any film.",
+          ].join('\n'),
+          inputSchema: {
+            query: QUERY.optional().describe("Optional free-text search: a title or mood, e.g. 'dragons', 'spooky'."),
+            genre: z
+              .enum(GENRES)
+              .optional()
+              .describe('Optional genre filter. Combine with `query` to search within it.'),
+          },
+          annotations: READ_ONLY,
+          view: {
+            component: 'discover',
+            description: 'Bitflix Discover: film catalogue and search',
+            csp: DISCOVER_CSP,
+            _meta: INLINE_OR_FULLSCREEN,
+          },
+          // The widget calls this itself, for search and the genre chips.
+          _meta: { ...GLOBAL_ENTRYPOINT, 'openai/widgetAccessible': true },
+        },
+        ({ query, genre }) => {
+          const p = discoverPayload({ query, genre });
+          return { structuredContent: p, content: [{ type: 'text', text: discoverSummary(p) }], _meta: VIEW_META };
+        },
+      )
+      // ── trailer_reel — thread entry point (side-panel tab next to a chat) ──
+      .registerTool(
+        {
+          name: 'trailer_reel',
+          title: 'Trailer Reel',
+          description: [
+            'Open the Trailer Reel: previews of the Bitflix Discover films, played back to back, each with a link',
+            'to watch the full film. Call when the user wants to watch trailers or see previews while they chat.',
+          ].join('\n'),
+          inputSchema: {},
+          annotations: READ_ONLY,
+          view: {
+            component: 'reel',
+            description: 'Bitflix Discover: trailer reel',
+            csp: DISCOVER_CSP,
+            _meta: INLINE_OR_FULLSCREEN,
+          },
+          _meta: THREAD_ENTRYPOINT,
+        },
+        () => {
+          const p = reelPayload();
+          return { structuredContent: p, content: [{ type: 'text', text: reelSummary(p) }], _meta: VIEW_META };
+        },
+      )
+      // ── preview_film — model-invoked, one title ──────────────────────────
+      .registerTool(
+        {
+          name: 'preview_film',
+          title: 'Preview a film',
+          description: [
+            'Show one film from Bitflix Discover with its preview and a link to watch it in full.',
+            "Call when the user names a film ('show me Sintel', 'trailer for Tears of Steel', 'the bunny one').",
+            'Pass the exact `id` from a previous result, or a free-text `query` with the title or what it is about.',
+          ].join('\n'),
+          inputSchema: {
+            id: z.string().trim().max(64).optional().describe('Exact film id from a previous discover result.'),
+            query: QUERY.optional().describe("Free-text title or description, e.g. 'the dragon film'."),
+          },
+          annotations: READ_ONLY,
+          view: {
+            component: 'film',
+            description: 'Bitflix Discover: film preview',
+            csp: DISCOVER_CSP,
+            _meta: INLINE_OR_FULLSCREEN,
+          },
+          // The widget calls this itself when the user opens a film, for its related films.
+          _meta: { 'openai/widgetAccessible': true },
+        },
+        ({ id, query }) => {
+          // An unknown id falls back to the query, so a stale id does not hide a good title.
+          const film = (id ? getFilm(id) : undefined) ?? (query ? resolveFilm(query) : undefined);
+          if (!film) {
+            // No match: degrade to a search screen so the view still renders something useful.
+            const p = discoverPayload({ query });
+            const asked = query || id;
+            const text = asked
+              ? `No film in Bitflix Discover matches "${echo(asked)}". ${discoverSummary(p)}`
+              : `No film was named. ${discoverSummary(p)}`;
+            return { structuredContent: p, content: [{ type: 'text', text }], _meta: VIEW_META };
+          }
+          const p = filmPayload(film);
+          return { structuredContent: p, content: [{ type: 'text', text: filmSummary(p) }], _meta: VIEW_META };
         },
       )
       // ── run_diagnostics ──────────────────────────────────────────────
