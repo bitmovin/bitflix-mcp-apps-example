@@ -22,13 +22,14 @@
     "test": "npm run test:unit && npm run test:mcp",
     "test:unit": "tsx --test --test-timeout=20000 'test/unit/*.test.ts'",
     "pretest:mcp": "npm run build",
-    "test:mcp": "tsx --test test/mcp.test.ts"
+    "test:mcp": "tsx --test --test-timeout=120000 'test/*.test.ts'"
   },
   "dependencies": {
     "@t3-oss/env-core": "^0.13.8",
     "bitmovin-player": "^8.253.0",
     "bitmovin-player-ui": "^4.20.2",
     "dotenv": "^17.2.3",
+    "qrcode-generator": "^2.0.4",
     "react": "^19.3.0",
     "react-dom": "^19.3.0",
     "skybridge": "^2.0.1",

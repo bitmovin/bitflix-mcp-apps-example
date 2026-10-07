@@ -23,12 +23,20 @@ import {
 } from './discover/model.js';
 import { discoverPayload, echo, filmPayload, reelPayload } from './discover/screens.js';
 import { resolveFilm } from './discover/search.js';
+import { type BitflixTool, EDITIONS } from './editions.js';
 import { env } from './env.js';
 
 /**
- * Identity reported to the MCP host. Mirrors the name and version in package.json.
+ * The Bitflix Edition this deployment serves, from BITFLIX_EDITION (see
+ * src/editions.ts). It decides the server's name, which tools it registers,
+ * their titles, the ChatGPT entry points, and the catalogue every tool sees.
  */
-const SERVER_INFO = { name: 'bitflix', version: '0.1.0' };
+const EDITION = EDITIONS[env.BITFLIX_EDITION];
+
+/**
+ * Identity reported to the MCP host: the edition's name, and the version in package.json.
+ */
+const SERVER_INFO = { name: EDITION.serverName, version: '0.1.0', description: EDITION.description };
 
 /**
  * Bitmovin Player license key, injected into every payload so the view can initialize the player.
@@ -116,8 +124,46 @@ const DISCOVER_CSP = {
  * Spec: https://github.com/openai/mcp-extensions/blob/main/docs/spec.md
  */
 const INLINE_OR_FULLSCREEN = { 'openai/ui': { availableDisplayModes: ['inline', 'fullscreen'] } };
-const GLOBAL_ENTRYPOINT = { 'openai/ui': { entrypoints: [{ type: 'global' }] } };
-const THREAD_ENTRYPOINT = { 'openai/ui': { entrypoints: [{ type: 'thread' }] } };
+
+/**
+ * A tool's plugin-extension `_meta` for this edition: the entry point it is,
+ * if any (each edition names at most one global and one thread entry point),
+ * plus `openai/widgetAccessible` so the widget can call it itself.
+ */
+function toolMeta(tool: BitflixTool) {
+  const type =
+    EDITION.entrypoints.global === tool ? 'global' : EDITION.entrypoints.thread === tool ? 'thread' : undefined;
+  return {
+    ...(type ? { 'openai/ui': { entrypoints: [{ type }] } } : {}),
+    ...(tool === 'trailer_reel' ? {} : { 'openai/widgetAccessible': true }),
+  };
+}
+
+/** A tool's title for this edition. ChatGPT shows it as the entry-point label. */
+const titleOf = (tool: BitflixTool, fallback?: string) => EDITION.titles[tool] ?? fallback;
+
+/**
+ * Registers only the tools this edition lists. The full chain below stays one
+ * expression, so Skybridge still derives every tool's types for the views;
+ * a tool outside the edition is simply never registered at runtime.
+ */
+function onlyEditionTools<S extends { registerTool: (config: { name: string }, cb: never) => S }>(server: S): S {
+  const allowed = new Set<string>(EDITION.tools);
+  const proxy: S = new Proxy(server, {
+    get(target, prop, receiver) {
+      if (prop === 'registerTool') {
+        return (config: { name: string }, cb: never) => {
+          if (allowed.has(config.name)) {
+            target.registerTool(config, cb);
+          }
+          return proxy;
+        };
+      }
+      return Reflect.get(target, prop, receiver) as unknown;
+    },
+  });
+  return proxy;
+}
 
 const QUERY = z.string().trim().max(QUERY_MAX_CHARS);
 const READ_ONLY = { readOnlyHint: true, openWorldHint: false, destructiveHint: false };
@@ -145,12 +191,12 @@ function browseSummary(p: BrowsePayload): string {
     .flatMap(s => s.items.map(i => i.title))
     .slice(0, 12)
     .join(', ');
-  return `Bitflix is open on the "${p.headline}" screen${p.subhead ? ` (${p.subhead})` : ''}. Rails: ${rails}. Titles include: ${titles}. The user can play any of these, or ask for more.`;
+  return `${p.brand.name} is open on the "${p.headline}" screen${p.subhead ? ` (${p.subhead})` : ''}. Rails: ${rails}. Titles include: ${titles}. The user can play any of these, or ask for more.`;
 }
 
 function playerSummary(p: PlayerPayload): string {
   const t = p.title;
-  return `Now playing "${t.title}" (${t.kicker}) in the Bitflix player.${t.score ? ` Score: ${t.score}.` : ''}${t.synopsis ? ` ${t.synopsis}` : ''} Up next: ${p.upNext.map(u => u.title).join(', ')}.`;
+  return `Now playing "${t.title}" (${t.kicker}) in the ${p.brand.name} player.${t.score ? ` Score: ${t.score}.` : ''}${t.synopsis ? ` ${t.synopsis}` : ''} Up next: ${p.upNext.map(u => u.title).join(', ')}.`;
 }
 
 export const app = new Skybridge({
@@ -158,32 +204,33 @@ export const app = new Skybridge({
   capabilities: {},
   // Runs on every request, so registration is all that belongs here.
   handler: server =>
-    server
+    onlyEditionTools(server)
       // ── browse_catalog ───────────────────────────────────────────────
       .registerTool(
         {
           name: 'browse_catalog',
+          title: titleOf('browse_catalog'),
           description: [
-            'Open the Bitflix streaming app — a streaming service that lives inside the chat.',
-            "Call this whenever the user wants to see what's on, browse, or open Bitflix.",
-            "No arguments returns the full home screen (live now, continue watching, tonight's games,",
-            'the newsroom, originals, films). Pass `category` (sports, news, films, originals, live,',
-            'documentary) or a free-text `query` to scope it. The user can click any title to play it.',
+            `Open ${EDITION.brand.name}, a streaming service that lives inside the chat.`,
+            `Call this whenever the user wants to see what's on, browse, or open ${EDITION.brand.name}.`,
+            `No arguments returns the home screen (${EDITION.scope}).`,
+            `Pass \`category\` (${EDITION.categories.join(', ')}) or a free-text \`query\` to scope it.`,
+            'The user can click any title to play it.',
           ].join('\n'),
           inputSchema: {
             category: z
               .string()
               .optional()
-              .describe('Optional category: sports, news, films, originals, live, documentary.'),
+              .describe(`Optional category: ${EDITION.categories.join(', ')}.`),
             query: z.string().optional().describe("Optional free-text search (e.g. 'basketball', 'space thriller')."),
           },
           annotations: { readOnlyHint: true, openWorldHint: false, destructiveHint: false },
-          view: { component: 'browse', description: 'Bitflix home / browse screen', csp: VIEW_CSP },
-          _meta: { 'openai/widgetAccessible': true },
+          view: { component: 'browse', description: `${EDITION.brand.name} home / browse screen`, csp: VIEW_CSP },
+          _meta: toolMeta('browse_catalog'),
         },
         ({ category, query }) => {
           const q = query || category;
-          const p = q ? categoryPayload({ licenseKey: KEY, query: q }) : homePayload(KEY);
+          const p = q ? categoryPayload({ licenseKey: KEY, query: q, edition: EDITION }) : homePayload(KEY, EDITION);
           return { structuredContent: p, content: [{ type: 'text', text: browseSummary(p) }], isError: false };
         },
       )
@@ -191,11 +238,18 @@ export const app = new Skybridge({
       .registerTool(
         {
           name: 'get_recommendations',
-          description: [
-            "Render a personalized Bitflix screen: 'because you watched', 'continue watching', 'new this week'.",
-            "Call when the user asks what to watch, wants a recommendation, or asks what's new.",
-            "Pass `context` to bias picks toward sport (e.g. 'loves basketball', 'wants a game on').",
-          ].join('\n'),
+          title: titleOf('get_recommendations'),
+          description:
+            EDITION.id === 'news'
+              ? [
+                  'Catch the user up on Bitflix News: every bulletin they missed, newest first, plus the live channel.',
+                  "Call for 'catch me up', 'what did I miss', 'what's the latest'.",
+                ].join('\n')
+              : [
+                  `Render a personalized ${EDITION.brand.name} screen: 'because you watched', 'continue watching', 'new this week'.`,
+                  "Call when the user asks what to watch, wants a recommendation, or asks what's new.",
+                  "Pass `context` to bias picks toward sport (e.g. 'loves basketball', 'wants a game on').",
+                ].join('\n'),
           inputSchema: {
             context: z
               .string()
@@ -203,11 +257,15 @@ export const app = new Skybridge({
               .describe('A sport or game the user follows; moves live sport and highlights to the front.'),
           },
           annotations: { readOnlyHint: true, openWorldHint: false, destructiveHint: false },
-          view: { component: 'recommend', description: 'Bitflix personalized recommendations', csp: VIEW_CSP },
-          _meta: { 'openai/widgetAccessible': true },
+          view: {
+            component: 'recommend',
+            description: `${EDITION.brand.name} ${EDITION.id === 'news' ? 'catch me up' : 'personalized recommendations'}`,
+            csp: VIEW_CSP,
+          },
+          _meta: toolMeta('get_recommendations'),
         },
         ({ context }) => {
-          const p = recommendationsPayload({ licenseKey: KEY, context });
+          const p = recommendationsPayload({ licenseKey: KEY, context, edition: EDITION });
           return { structuredContent: p, content: [{ type: 'text', text: browseSummary(p) }], isError: false };
         },
       )
@@ -215,18 +273,19 @@ export const app = new Skybridge({
       .registerTool(
         {
           name: 'whats_live',
+          title: titleOf('whats_live'),
           description: [
-            'Show only what is live on Bitflix right now — live games and the 24/7 newsroom, with their',
-            "current state (quarter, score, 'on air'). Call for 'what's on right now', 'any games on?', 'what's live?'.",
+            `Show only what is live on ${EDITION.brand.name} right now, with each title's current state`,
+            "(quarter, score, 'on air'). Call for 'what's on right now', 'any games on?', 'what's live?'.",
             'This lists what is on air; call `play_title` to start playing one of them.',
           ].join('\n'),
           inputSchema: {},
           annotations: { readOnlyHint: true, openWorldHint: false, destructiveHint: false },
-          view: { component: 'live', description: 'Bitflix live now', csp: VIEW_CSP },
-          _meta: { 'openai/widgetAccessible': true },
+          view: { component: 'live', description: `${EDITION.brand.name} live now`, csp: VIEW_CSP },
+          _meta: toolMeta('whats_live'),
         },
         () => {
-          const p = livePayload(KEY);
+          const p = livePayload(KEY, EDITION);
           return { structuredContent: p, content: [{ type: 'text', text: browseSummary(p) }], isError: false };
         },
       )
@@ -234,8 +293,9 @@ export const app = new Skybridge({
       .registerTool(
         {
           name: 'play_title',
+          title: titleOf('play_title'),
           description: [
-            'Start playback of a specific Bitflix title in the inline Bitmovin Player.',
+            `Start playback of a specific ${EDITION.brand.name} title in the inline Bitmovin Player.`,
             "Call when the user names something to watch ('play the finals', 'put on Orbit', 'put the news on').",
             'Pass the exact `id` (from a previous browse result) or a free-text `query` (title, team, topic).',
           ].join('\n'),
@@ -247,22 +307,27 @@ export const app = new Skybridge({
               .describe("Free-text title/team/topic, e.g. 'the derby', 'Orbit', 'closing bell'."),
           },
           annotations: { readOnlyHint: true, openWorldHint: false, destructiveHint: false },
-          view: { component: 'player', description: 'Bitflix player', csp: VIEW_CSP },
-          _meta: { 'openai/widgetAccessible': true },
+          view: { component: 'player', description: `${EDITION.brand.name} player`, csp: VIEW_CSP },
+          _meta: toolMeta('play_title'),
         },
         ({ id, query }) => {
           const needle = id || query || '';
-          const title = (id && getTitle(id)) || resolveTitle(needle);
+          const byId = id ? getTitle(id) : undefined;
+          const title = (byId && EDITION.includes(byId) ? byId : undefined) ?? resolveTitle(needle, EDITION);
           if (!title) {
-            // No match — degrade to the live screen so the widget still renders.
-            const p = livePayload(KEY);
+            // No match: degrade to the live screen (or home, without live titles) so the widget still renders.
+            const p = livePayload(KEY, EDITION).sections[0]?.items.length
+              ? livePayload(KEY, EDITION)
+              : homePayload(KEY, EDITION);
             return {
               structuredContent: p,
-              content: [{ type: 'text', text: `Couldn't find "${needle}". Showing what's live instead.` }],
+              content: [
+                { type: 'text', text: `Couldn't find "${needle}" in ${EDITION.brand.name}. ${browseSummary(p)}` },
+              ],
               isError: false,
             };
           }
-          const p = playerPayload({ licenseKey: KEY, title });
+          const p = playerPayload({ licenseKey: KEY, title, edition: EDITION });
           return { structuredContent: p, content: [{ type: 'text', text: playerSummary(p) }], isError: false };
         },
       )
@@ -292,7 +357,7 @@ export const app = new Skybridge({
             _meta: INLINE_OR_FULLSCREEN,
           },
           // The widget calls this itself, for search and the genre chips.
-          _meta: { ...GLOBAL_ENTRYPOINT, 'openai/widgetAccessible': true },
+          _meta: toolMeta('discover'),
         },
         ({ query, genre }) => {
           const p = discoverPayload({ query, genre });
@@ -316,7 +381,7 @@ export const app = new Skybridge({
             csp: DISCOVER_CSP,
             _meta: INLINE_OR_FULLSCREEN,
           },
-          _meta: THREAD_ENTRYPOINT,
+          _meta: toolMeta('trailer_reel'),
         },
         () => {
           const p = reelPayload();
@@ -345,7 +410,7 @@ export const app = new Skybridge({
             _meta: INLINE_OR_FULLSCREEN,
           },
           // The widget calls this itself when the user opens a film, for its related films.
-          _meta: { 'openai/widgetAccessible': true },
+          _meta: toolMeta('preview_film'),
         },
         ({ id, query }) => {
           // An unknown id falls back to the query, so a stale id does not hide a good title.
@@ -378,7 +443,7 @@ export const app = new Skybridge({
           inputSchema: {},
           annotations: { readOnlyHint: true, openWorldHint: false, destructiveHint: false },
           view: { component: 'diagnostics', description: 'Video capability diagnostics for MCP hosts', csp: VIEW_CSP },
-          _meta: { 'openai/widgetAccessible': true },
+          _meta: toolMeta('run_diagnostics'),
         },
         () => {
           return {

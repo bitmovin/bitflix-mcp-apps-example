@@ -356,3 +356,44 @@
     justify-content: center;
   }
 }
+
+/* ── TV hand-off: a QR code for watching on another screen ───────────────── */
+.tv-handoff {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin: 4px 0 18px;
+}
+.tv-handoff > .btn {
+  align-self: flex-start;
+}
+.tv-panel {
+  display: flex;
+  gap: 18px;
+  align-items: center;
+  padding: 16px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: var(--panel);
+}
+.tv-panel .qr {
+  width: 132px;
+  height: 132px;
+  flex: none;
+  border-radius: 8px;
+}
+.tv-title {
+  font-weight: 700;
+  font-size: 15px;
+}
+.tv-sub {
+  color: var(--ink-dim);
+  font-size: 13px;
+  margin-top: 4px;
+}
+.tv-url {
+  color: var(--ink-faint);
+  font-size: 12px;
+  margin-top: 8px;
+  word-break: break-all;
+}

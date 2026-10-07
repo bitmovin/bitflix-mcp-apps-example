@@ -1,4 +1,5 @@
-import type { ReactNode } from 'react';
+import qrcode from 'qrcode-generator';
+import { type ReactNode, useMemo, useState } from 'react';
 import { useOpenExternal } from 'skybridge/web';
 import { type Brand, type Film, hasPreview } from '../../../discover/model.js';
 import { ICON } from '../cover.js';
@@ -104,4 +105,63 @@ export function PreviewErrorCard({ title, handoff, detail }: { title: string; ha
  */
 export function ModelContext({ text }: { text: string }) {
   return <span data-llm={text} hidden />;
+}
+
+/**
+ * A QR code for `url`, drawn as SVG from the code's modules (no markup string
+ * from the library is injected). Scanning it opens the link on a phone or TV.
+ */
+function QrCode({ url, label }: { url: string; label: string }) {
+  const { size, path } = useMemo(() => {
+    const qr = qrcode(0, 'M');
+    qr.addData(url);
+    qr.make();
+    const n = qr.getModuleCount();
+    let d = '';
+    for (let row = 0; row < n; row++) {
+      for (let col = 0; col < n; col++) {
+        if (qr.isDark(row, col)) {
+          d += `M${col + 2} ${row + 2}h1v1h-1z`;
+        }
+      }
+    }
+    return { size: n + 4, path: d }; // a two-module quiet zone on each side
+  }, [url]);
+  return (
+    <svg className="qr" viewBox={`0 0 ${size} ${size}`} role="img" aria-label={label} shapeRendering="crispEdges">
+      <rect width={size} height={size} fill="#ffffff" />
+      <path d={path} fill="#000000" />
+    </svg>
+  );
+}
+
+/**
+ * The hand-off to a TV. Casting is blocked inside AI-assistant sandboxes, so
+ * the film's link goes out as a QR code: scan it with a phone or a TV app's
+ * camera, or open the link on the TV. Uses the film's TV-app deep link when
+ * the catalogue has one, otherwise its watch page.
+ */
+export function TvHandoff({ film, provider }: { film: Film; provider: string }) {
+  const [open, setOpen] = useState(false);
+  const url = film.tvUrl ?? film.watchUrl;
+  return (
+    <div className="tv-handoff">
+      <button className="btn btn-ghost" aria-expanded={open} onClick={() => setOpen(o => !o)}>
+        <Icon html={ICON.tv} />
+        Watch on TV
+      </button>
+      {open ? (
+        <div className="tv-panel" role="region" aria-label={`Open ${film.title} on another screen`}>
+          <QrCode url={url} label={`QR code for ${film.title} on ${provider}`} />
+          <div className="tv-text">
+            <div className="tv-title">Scan to watch on your TV or phone</div>
+            <div className="tv-sub">
+              Opens {film.title} on {provider}. Casting is not available inside the chat.
+            </div>
+            <div className="tv-url">{url.replace(/^https:\/\//, '')}</div>
+          </div>
+        </div>
+      ) : null}
+    </div>
+  );
 }
