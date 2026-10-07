@@ -105,6 +105,19 @@ body::after {
   color: var(--ember-2);
   -webkit-text-fill-color: var(--ember-2);
 }
+/* Bitflix Editions: the edition's name beside the wordmark ("Sports", "News", "Streaming"). */
+.edition-tag {
+  font-family: var(--display);
+  font-weight: 700;
+  font-size: 15px;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--ink);
+  padding: 5px 11px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  white-space: nowrap;
+}
 
 /* Broadcast identity — a live "ON AIR" bug with a ticking timecode. */
 .onair {

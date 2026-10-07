@@ -14,6 +14,7 @@
 // ─────────────────────────────────────────────────────────────────────────
 
 import type { SourceConfig } from 'bitmovin-player';
+import { type Edition, EDITIONS } from './editions.js';
 
 export type StreamType = 'hls' | 'dash';
 
@@ -455,54 +456,7 @@ export const TITLES: Title[] = [
   },
 ];
 
-// ── Sections (the "rows" of the home screen) ──────────────────────────────
-export const HOME_SECTIONS: Section[] = [
-  {
-    id: 'live',
-    title: 'Live Right Now',
-    subtitle: 'On air across Bitflix',
-    layout: 'live',
-    itemIds: ['live-finals-g6', 'live-newsroom', 'live-derby'],
-  },
-  {
-    id: 'continue',
-    title: 'Continue Watching',
-    layout: 'wide',
-    itemIds: ['film-aurora', 'doc-summit'],
-  },
-  {
-    id: 'games',
-    title: "Tonight's Games & Highlights",
-    layout: 'wide',
-    itemIds: ['game-tipoff-replay', 'game-top10', 'game-ice-classic'],
-  },
-  {
-    id: 'news',
-    title: 'The Newsroom',
-    layout: 'poster',
-    itemIds: ['news-world', 'news-markets', 'news-deepdive'],
-  },
-  {
-    id: 'originals',
-    title: 'Bitflix Originals',
-    subtitle: "You won't find these anywhere else",
-    layout: 'poster',
-    itemIds: ['orig-orbit', 'orig-encore', 'orig-tides'],
-  },
-  {
-    id: 'films',
-    title: 'Films We Love',
-    layout: 'poster',
-    itemIds: ['film-steel', 'film-sintel', 'film-motion'],
-  },
-  {
-    id: 'drm',
-    title: 'DRM Lab',
-    subtitle: 'Which content protection does this MCP host actually allow?',
-    layout: 'wide',
-    itemIds: ['drm-widevine', 'drm-playready'],
-  },
-];
+// The home screen's rows live in src/editions.ts, one set per edition.
 
 // ── Lookups & helpers ──────────────────────────────────────────────────────
 const BY_ID = new Map(TITLES.map(t => [t.id, t]));
@@ -525,39 +479,46 @@ function requireTitle(id: string): Title {
   return title;
 }
 
-export function liveTitles(): Title[] {
-  return TITLES.filter(t => t.delivery === 'live');
+/** The titles an edition carries. */
+function titlesOf(edition: Edition): Title[] {
+  return TITLES.filter(edition.includes);
+}
+
+export function liveTitles(edition: Edition = EDITIONS.all): Title[] {
+  return titlesOf(edition).filter(t => t.delivery === 'live');
 }
 
 /**
  * Free-text search across title, kicker, kind, synopsis and tags.
  */
-export function search(query: string): Title[] {
+export function search(query: string, edition: Edition = EDITIONS.all): Title[] {
   const q = query.trim().toLowerCase();
   if (!q) {
     return [];
   }
   const terms = q.split(/\s+/);
-  const scored = TITLES.map(t => {
-    const haystack = [t.title, t.kicker, t.kind, t.synopsis, ...t.tags].join(' ').toLowerCase();
-    let score = 0;
-    for (const term of terms) {
-      if (t.title.toLowerCase().includes(term)) {
-        score += 5;
+  const scored = titlesOf(edition)
+    .map(t => {
+      const haystack = [t.title, t.kicker, t.kind, t.synopsis, ...t.tags].join(' ').toLowerCase();
+      let score = 0;
+      for (const term of terms) {
+        if (t.title.toLowerCase().includes(term)) {
+          score += 5;
+        }
+        if (t.tags.some(tag => tag === term)) {
+          score += 4;
+        }
+        if (haystack.includes(term)) {
+          score += 1;
+        }
       }
-      if (t.tags.some(tag => tag === term)) {
-        score += 4;
+      // a bare "live" / "news" / "sports" intent should surface live content
+      if (terms.includes('live') && t.delivery === 'live') {
+        score += 3;
       }
-      if (haystack.includes(term)) {
-        score += 1;
-      }
-    }
-    // a bare "live" / "news" / "sports" intent should surface live content
-    if (terms.includes('live') && t.delivery === 'live') {
-      score += 3;
-    }
-    return { t, score };
-  }).filter(s => s.score > 0);
+      return { t, score };
+    })
+    .filter(s => s.score > 0);
   scored.sort((a, b) => b.score - a.score);
   return scored.map(s => s.t);
 }
@@ -565,8 +526,9 @@ export function search(query: string): Title[] {
 /**
  * Resolve a title by exact id first, then by best free-text match.
  */
-export function resolveTitle(idOrQuery: string): Title | undefined {
-  return BY_ID.get(idOrQuery) ?? search(idOrQuery)[0];
+export function resolveTitle(idOrQuery: string, edition: Edition = EDITIONS.all): Title | undefined {
+  const byId = BY_ID.get(idOrQuery);
+  return byId && edition.includes(byId) ? byId : search(idOrQuery, edition)[0];
 }
 
 // A Map, not an object literal: the key is free text from the caller, and a
@@ -584,10 +546,10 @@ const CATEGORY_SYNONYMS = new Map<string, string[]>([
 /**
  * Filter the catalog down to a loose category bucket.
  */
-export function byCategory(category: string): Title[] {
+export function byCategory(category: string, edition: Edition = EDITIONS.all): Title[] {
   const c = category.trim().toLowerCase();
   const syns = CATEGORY_SYNONYMS.get(c) ?? [c];
-  return TITLES.filter(
+  return titlesOf(edition).filter(
     t => syns.includes(t.kind) || t.tags.some(tag => syns.includes(tag)) || (c === 'live' && t.delivery === 'live'),
   );
 }
@@ -596,19 +558,26 @@ export interface Brand {
   name: string;
   tagline: string;
   wordmark: string;
+  edition?: string; // edition label next to the wordmark, e.g. "Sports"; absent on the all-in-one Bitflix
 }
 
-export const BRAND: Brand = {
-  name: 'Bitflix',
-  tagline: 'Just say what you want to watch.',
-  wordmark: 'BITFLIX',
-};
+export const BRAND: Brand = EDITIONS.all.brand;
+
+type ChipBase = { label: string; key: string };
+/**
+ * A filter chip on the browse screen and the tool call it makes, carrying only
+ * that tool's arguments. Each edition sends its own set.
+ */
+export type ChipDef =
+  | (ChipBase & { tool: 'browse_catalog'; category?: string }) // no category means the edition's home
+  | (ChipBase & { tool: 'get_recommendations' | 'whats_live' });
 
 export type BrowseScreen = 'home' | 'live' | 'recommendations' | 'category' | 'search';
 
 interface BrowsePayloadBase {
   view: 'browse';
   brand: Brand;
+  chips: ChipDef[];
   headline: string;
   subhead?: string;
   featuredId?: string; // title the hero frame leads with; absent when the screen has no items
@@ -646,34 +615,52 @@ function hydrate(section: Section) {
 }
 
 /**
- * The full home screen.
+ * An edition's home screen.
  */
-export function homePayload(licenseKey: string): BrowsePayload {
+export function homePayload(licenseKey: string, edition: Edition = EDITIONS.all): BrowsePayload {
+  const { home } = edition;
   return {
     view: 'browse',
-    brand: BRAND,
+    brand: edition.brand,
+    chips: edition.chips,
     screen: 'home',
-    headline: 'Good evening.',
-    subhead: "Here's what's worth your time tonight.",
-    featuredId: 'live-finals-g6',
-    sections: HOME_SECTIONS.map(hydrate),
+    headline: home.headline,
+    subhead: home.subhead,
+    featuredId: home.featuredId,
+    sections: home.sections.map(hydrate),
     licenseKey,
   };
 }
 
 /**
- * A browse screen scoped to a category or free-text query.
+ * A browse screen scoped to a category or free-text query, within the edition.
  */
-export function categoryPayload({ licenseKey, query }: { licenseKey: string; query: string }): BrowsePayload {
+export function categoryPayload({
+  licenseKey,
+  query,
+  edition = EDITIONS.all,
+}: {
+  licenseKey: string;
+  query: string;
+  edition?: Edition;
+}): BrowsePayload {
   const bucket = query.trim().toLowerCase();
-  const isCategory = CATEGORY_SYNONYMS.has(bucket);
-  const results = isCategory ? byCategory(query) : search(query);
-  const items = results.length ? results : byCategory('live');
+  const results = byCategory(query, edition).length ? byCategory(query, edition) : search(query, edition);
+  const isCategory = CATEGORY_SYNONYMS.has(bucket) || edition.categories.includes(bucket);
+  const fallback = liveTitles(edition).length ? liveTitles(edition) : titlesOf(edition);
+  const items = results.length ? results : fallback;
   const common: BrowsePayloadBase = {
     view: 'browse',
-    brand: BRAND,
-    headline: results.length ? `Results for "${query}"` : "Nothing exact — here's what's live",
-    subhead: results.length ? `${items.length} title${items.length === 1 ? '' : 's'} in Bitflix` : undefined,
+    brand: edition.brand,
+    chips: edition.chips,
+    headline: results.length
+      ? `Results for "${query}"`
+      : liveTitles(edition).length
+        ? "Nothing exact — here's what's live"
+        : "Nothing exact — here's everything",
+    subhead: results.length
+      ? `${items.length} title${items.length === 1 ? '' : 's'} in ${edition.brand.name}`
+      : undefined,
     featuredId: items[0]?.id,
     sections: [{ id: 'results', title: query.replace(/\b\w/g, m => m.toUpperCase()), layout: 'poster', items }],
     licenseKey,
@@ -684,35 +671,44 @@ export function categoryPayload({ licenseKey, query }: { licenseKey: string; que
 /**
  * Live-only browse screen.
  */
-export function livePayload(licenseKey: string): BrowsePayload {
-  const items = liveTitles();
+export function livePayload(licenseKey: string, edition: Edition = EDITIONS.all): BrowsePayload {
+  const items = liveTitles(edition);
   return {
     view: 'browse',
-    brand: BRAND,
+    brand: edition.brand,
+    chips: edition.chips,
     screen: 'live',
-    headline: 'On air right now',
-    subhead: `${items.length} live channels across sports and news`,
+    headline: edition.live.headline,
+    subhead: items.length
+      ? `${items.length} live ${items.length === 1 ? 'channel' : 'channels'} in ${edition.brand.name}`
+      : undefined,
     featuredId: items[0]?.id,
-    sections: [{ id: 'live', title: 'Live Right Now', layout: 'live', items }],
+    sections: [{ id: 'live', title: edition.live.title, layout: 'live', items }],
     licenseKey,
   };
 }
 
 /**
- * Personalized recommendations.
+ * Personalized recommendations; in the News edition, "Catch me up".
  *
  * `context` biases the rails, for example "loves basketball".
  */
 export function recommendationsPayload({
   licenseKey,
   context,
+  edition = EDITIONS.all,
 }: {
   licenseKey: string;
   context?: string;
+  edition?: Edition;
 }): BrowsePayload {
+  if (edition.id === 'news') {
+    return catchUpPayload(licenseKey, edition);
+  }
   const ctx = (context ?? '').toLowerCase();
+  const keep = (ts: Title[]) => ts.filter(edition.includes);
   // The titles the recommendations are pitched as following from.
-  const continueWatching = [requireTitle('film-aurora'), requireTitle('doc-summit')];
+  const continueWatching = keep([requireTitle('film-aurora'), requireTitle('doc-summit')]);
   // What watching Aurora and The Vertical Mile leads to: more originals + docs.
   const becauseYouWatched = [
     requireTitle('orig-orbit'),
@@ -730,33 +726,43 @@ export function recommendationsPayload({
     requireTitle('news-deepdive'),
     requireTitle('orig-tides'),
   ];
+  const because = keep(becauseYouWatched);
   return {
     view: 'browse',
-    brand: BRAND,
+    brand: edition.brand,
+    chips: edition.chips,
     screen: 'recommendations',
     headline: 'Picked for you',
     subhead: context ? `Because you mentioned: "${context}"` : "Based on what you've been watching lately",
-    featuredId: becauseYouWatched[0]?.id,
+    featuredId: because[0]?.id,
     sections: [
-      {
-        id: 'because',
-        title: 'Because you watched Aurora',
-        layout: 'wide',
-        items: becauseYouWatched,
-      },
-      {
-        id: 'continue',
-        title: 'Pick up where you left off',
-        layout: 'wide',
-        items: continueWatching,
-      },
-      {
-        id: 'new',
-        title: 'New this week',
-        layout: 'poster',
-        items: newThisWeek,
-      },
-    ],
+      { id: 'because', title: 'Because you watched Aurora', layout: 'wide' as const, items: because },
+      { id: 'continue', title: 'Pick up where you left off', layout: 'wide' as const, items: continueWatching },
+      { id: 'new', title: 'New this week', layout: 'poster' as const, items: keep(newThisWeek) },
+    ].filter(r => r.items.length > 0),
+    licenseKey,
+  };
+}
+
+/**
+ * The News edition's "Catch me up": the live channel first, then every
+ * bulletin in running order, so one tap starts the latest.
+ */
+function catchUpPayload(licenseKey: string, edition: Edition): BrowsePayload {
+  const live = liveTitles(edition);
+  const bulletins = titlesOf(edition).filter(t => t.delivery !== 'live');
+  return {
+    view: 'browse',
+    brand: edition.brand,
+    chips: edition.chips,
+    screen: 'recommendations',
+    headline: "Here's what you missed",
+    subhead: `${bulletins.length} bulletin${bulletins.length === 1 ? '' : 's'}, newest first, and the live channel`,
+    featuredId: bulletins[0]?.id ?? live[0]?.id,
+    sections: [
+      { id: 'catchup', title: 'Catch me up', layout: 'wide' as const, items: bulletins },
+      { id: 'live', title: 'Live now', layout: 'live' as const, items: live },
+    ].filter(r => r.items.length > 0),
     licenseKey,
   };
 }
@@ -773,10 +779,18 @@ export function diagnosticsPayload(licenseKey: string): DiagnosticsPayload {
   };
 }
 
-export function playerPayload({ licenseKey, title }: { licenseKey: string; title: Title }): PlayerPayload {
-  // "Up next" = a few same-kind / shared-tag siblings
-  const upNext = TITLES.filter(
-    t => t.id !== title.id && (t.kind === title.kind || t.tags.some(tag => title.tags.includes(tag))),
-  ).slice(0, 4);
-  return { view: 'player', brand: BRAND, title, upNext, licenseKey };
+export function playerPayload({
+  licenseKey,
+  title,
+  edition = EDITIONS.all,
+}: {
+  licenseKey: string;
+  title: Title;
+  edition?: Edition;
+}): PlayerPayload {
+  // "Up next" = a few same-kind / shared-tag siblings from the same edition
+  const upNext = titlesOf(edition)
+    .filter(t => t.id !== title.id && (t.kind === title.kind || t.tags.some(tag => title.tags.includes(tag))))
+    .slice(0, 4);
+  return { view: 'player', brand: edition.brand, title, upNext, licenseKey };
 }

@@ -16,7 +16,7 @@ import { useAutoHeight } from '../../hooks.js';
 import { ICON, coverArt } from '../cover.js';
 import { Icon } from '../Icon.js';
 import { PreviewPlayerLazy } from './PreviewPlayerLazy.js';
-import { Credits, FilmMeta, ModelContext, Topbar, WatchButton } from './shared.js';
+import { Credits, FilmMeta, ModelContext, Topbar, TvHandoff, WatchButton } from './shared.js';
 
 type Payload = DiscoverPayload | FilmPayload;
 
@@ -294,6 +294,7 @@ function FilmScreen({
           <WatchButton film={f} provider={provider} />
         </div>
       </div>
+      <TvHandoff film={f} provider={provider} />
       {p.related.length ? (
         <RailRow
           rail={{ id: 'related', title: 'More like this', layout: 'poster', items: p.related }}

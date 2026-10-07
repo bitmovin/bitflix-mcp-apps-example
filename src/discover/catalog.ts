@@ -218,6 +218,9 @@ export function checkFilm(f: Film): void {
   if (!url || url.protocol !== 'https:' || !WATCH_ORIGINS.includes(url.origin)) {
     throw new Error(`${f.id}: watch link ${f.watchUrl} is not an https URL on WATCH_ORIGINS`);
   }
+  if (f.tvUrl !== undefined && URL.parse(f.tvUrl)?.protocol !== 'https:') {
+    throw new Error(`${f.id}: TV link ${f.tvUrl} is not an https URL`);
+  }
   for (const colour of [f.cover.from, f.cover.to, f.cover.accent]) {
     if (!HEX.test(colour)) {
       throw new Error(`${f.id}: cover colour ${colour} is not #rrggbb`);

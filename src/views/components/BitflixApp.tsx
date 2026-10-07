@@ -7,6 +7,7 @@ import {
   type Badge,
   type Brand,
   type BrowsePayload,
+  type ChipDef,
   type PlayerPayload,
   type Rail,
   type Title,
@@ -67,7 +68,8 @@ function Topbar({ brand, prompt }: { brand: Brand; prompt?: string }) {
         {brand.wordmark}
         <span className="dot">.</span>
       </div>
-      <div className="onair" aria-label="On air" title="Bitflix is broadcasting">
+      {brand.edition ? <div className="edition-tag">{brand.edition}</div> : null}
+      <div className="onair" aria-label="On air" title={`${brand.name} is broadcasting`}>
         <span className="onair-dot" />
         ON AIR
         <LiveClock />
@@ -215,34 +217,6 @@ function Hero({ p, onPlay }: { p: BrowsePayload; onPlay: (t: Title) => void }) {
 }
 
 // ── chips ───────────────────────────────────────────────────────────────────
-type ChipBase = { label: string; key: string };
-/**
- * A nav chip and the tool call it makes, carrying only that tool's arguments.
- */
-type ChipDef =
-  | (ChipBase & { tool: 'browse_catalog'; category?: string }) // no category means whole catalog
-  | (ChipBase & { tool: 'get_recommendations' | 'whats_live' });
-
-/**
- * A chip scoped to one category, whose key is that category.
- */
-const categoryChip = (label: string, category: string): ChipDef => ({
-  label,
-  key: category,
-  tool: 'browse_catalog',
-  category,
-});
-
-const CHIPS: ChipDef[] = [
-  { label: 'Home', key: 'home', tool: 'browse_catalog' },
-  { label: 'For You', key: 'foryou', tool: 'get_recommendations' },
-  { label: 'Live', key: 'live', tool: 'whats_live' },
-  categoryChip('Sports', 'sports'),
-  categoryChip('News', 'news'),
-  categoryChip('Films', 'films'),
-  categoryChip('Originals', 'originals'),
-];
-
 /**
  * The chip to mark active, or none for a screen no chip leads to.
  */
@@ -285,7 +259,7 @@ function BrowseView({
     <div className="bitflix-root" ref={rootRef}>
       <Topbar brand={p.brand} prompt={p.brand.tagline} />
       <div className="chips">
-        {CHIPS.map(c => (
+        {p.chips.map(c => (
           <button key={c.key} className={`chip ${c.key === activeKey ? 'is-active' : ''}`} onClick={() => onChip(c)}>
             {c.label}
           </button>
@@ -300,9 +274,11 @@ function BrowseView({
         <RailRow key={s.id} section={s} onPlay={onPlay} />
       ))}
       <FooterNote brand={p.brand} />
-      <div data-llm="" style={{ display: 'none' }}>
-        {`Bitflix is open on "${p.headline}". Rails: ${p.sections.map(s => s.title).join(', ')}. The user can play any title or ask for more.`}
-      </div>
+      {/* Skybridge reads the model context from the data-llm value; children are ignored. */}
+      <span
+        hidden
+        data-llm={`${p.brand.name} is open on "${p.headline}". Rails: ${p.sections.map(s => s.title).join(', ')}. The user can play any title or ask for more.`}
+      />
     </div>
   );
 }
@@ -416,9 +392,10 @@ function PlayerView({ p, onBack, onPlay }: { p: PlayerPayload; onBack: () => voi
         ) : null}
         <FooterNote brand={p.brand} />
       </div>
-      <div data-llm="" style={{ display: 'none' }}>
-        {`The user is watching "${t.title}" (${t.kicker}) in the Bitflix player${cast.casting ? `, cast via Google Cast to ${cast.device || 'a device'} (this device is now a remote)` : cast.available ? ' on this device (a Google Cast receiver is available)' : ' on this device (no Google Cast receiver available in this MCP host sandbox)'}.${t.score ? ` Score: ${t.score}.` : ''} Up next: ${p.upNext.map(u => u.title).join(', ')}.`}
-      </div>
+      <span
+        hidden
+        data-llm={`The user is watching "${t.title}" (${t.kicker}) in the ${p.brand.name} player${cast.casting ? `, cast via Google Cast to ${cast.device || 'a device'} (this device is now a remote)` : cast.available ? ' on this device (a Google Cast receiver is available)' : ' on this device (no Google Cast receiver available in this MCP host sandbox)'}.${t.score ? ` Score: ${t.score}.` : ''} Up next: ${p.upNext.map(u => u.title).join(', ')}.`}
+      />
     </div>
   );
 }

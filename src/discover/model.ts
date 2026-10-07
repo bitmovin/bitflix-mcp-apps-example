@@ -47,6 +47,7 @@ export interface Film {
   tags: string[]; // for search
   cover: Cover;
   watchUrl: string; // where the full film lives
+  tvUrl?: string; // a deep link into the provider's TV app; the TV hand-off falls back to watchUrl
   runtimeSec?: number; // known for the films whose stream is hosted
   preview?: Preview; // absent when no stream is hosted for the title
 }
