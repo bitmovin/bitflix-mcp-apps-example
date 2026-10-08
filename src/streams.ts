@@ -6,7 +6,7 @@
 // lets the player fetch.
 // ─────────────────────────────────────────────────────────────────────────
 
-import type { SourceConfig } from 'bitmovin-player';
+import { HttpResponseType, type SourceConfig } from 'bitmovin-player';
 
 // ── DRM (protected) test streams ────────────────────────────────────────────
 // The Bitmovin "Art of Motion" DRM asset is multi-DRM (Widevine + PlayReady in
@@ -15,8 +15,10 @@ import type { SourceConfig } from 'bitmovin-player';
 // sandbox. Which one plays tells you exactly which DRM the host exposes:
 //   Widevine  → Chromium hosts (Chrome, Claude desktop, ChatGPT web)
 //   PlayReady → Edge / Windows only
-//   FairPlay  → Safari only (covered by the diagnostics EME probe — there's no
-//               public LA/cert to attach for this asset, so we don't fake one)
+//   FairPlay  → Safari / WebKit only
+// Art of Motion has no FairPlay rendition (its HLS variant is plain AES-128),
+// so the FairPlay stream is EZDRM's public demo clip, which comes with its own
+// application certificate and license endpoint.
 const DRM_DASH = 'https://cdn.bitmovin.com/content/assets/art-of-motion_drm/mpds/11331.mpd';
 
 /**
@@ -55,6 +57,25 @@ export const STREAMS = {
       playready: {
         LA_URL:
           'https://test.playready.microsoft.com/service/rightsmanager.asmx?PlayRight=1&ContentKey=EAtsIJQPd5pFiRUrV9Layw==',
+      },
+    },
+  },
+  'ezdrm-fairplay': {
+    hls: 'https://fps.ezdrm.com/demo/video/ezdrm.m3u8',
+    drm: {
+      fairplay: {
+        LA_URL: 'https://fps.ezdrm.com/api/licenses/09cc0377-6dd4-40cb-b09d-b582236e70fe',
+        certificateURL: 'https://fps.ezdrm.com/demo/video/eleisure.cer',
+        // EZDRM key URIs read `skd://<host>/;<asset id>`; its license server wants only the asset id.
+        prepareContentId: uri => uri.split(';', 2)[1] ?? '',
+        // Request and response shaping per
+        // https://developer.bitmovin.com/playback/docs/playing-protected-content-with-ezdrm
+        prepareMessage: (event: { message: BufferSource }) =>
+          new Blob([event.message], { type: 'application/octet-binary' }),
+        prepareLicenseAsync: (ckc: Blob) => ckc.arrayBuffer().then(buffer => new Uint8Array(buffer)),
+        headers: { 'content-type': 'application/octet-stream' },
+        useUint16InitData: true,
+        licenseResponseType: HttpResponseType.BLOB,
       },
     },
   },

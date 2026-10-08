@@ -49,7 +49,8 @@ export type Badge =
   | 'DOLBY VISION'
   | 'DRM'
   | 'WIDEVINE'
-  | 'PLAYREADY';
+  | 'PLAYREADY'
+  | 'FAIRPLAY';
 
 interface TitleBase {
   id: string;
@@ -404,6 +405,19 @@ export const TITLES: Title[] = [
     cover: { from: '#241608', to: '#0A0703', accent: GOLD, motif: 'stage' },
     streamId: 'art-of-motion-drm-playready',
   },
+  {
+    id: 'drm-fairplay',
+    delivery: 'vod',
+    title: 'EZDRM Demo · FairPlay',
+    kind: 'film',
+    kicker: 'Bitflix · DRM Lab',
+    synopsis:
+      "EZDRM's public demo clip behind FairPlay DRM. Expected to play only in Safari and other WebKit hosts; anywhere else it should fail, which is itself the data point.",
+    badges: ['DRM', 'FAIRPLAY'],
+    tags: ['drm', 'fairplay', 'protected', 'lab', 'test'],
+    cover: { from: '#061A24', to: '#02080C', accent: ICEBLUE, motif: 'film' },
+    streamId: 'ezdrm-fairplay',
+  },
 ];
 
 // ── Sections (the "rows" of the home screen) ──────────────────────────────
@@ -451,7 +465,7 @@ export const HOME_SECTIONS: Section[] = [
     title: 'DRM Lab',
     subtitle: 'Which content protection does this MCP host actually allow?',
     layout: 'wide',
-    itemIds: ['drm-widevine', 'drm-playready'],
+    itemIds: ['drm-widevine', 'drm-playready', 'drm-fairplay'],
   },
 ];
 
@@ -529,7 +543,7 @@ const CATEGORY_SYNONYMS = new Map<string, string[]>([
   ['originals', ['original', 'series']],
   ['live', ['live']],
   ['documentary', ['documentary', 'doc', 'nature']],
-  ['drm', ['drm', 'widevine', 'playready', 'protected']],
+  ['drm', ['drm', 'widevine', 'playready', 'fairplay', 'protected']],
 ]);
 
 /**
@@ -719,7 +733,7 @@ export function diagnosticsPayload(licenseKey: string): DiagnosticsPayload {
   return {
     view: 'diagnostics',
     brand: BRAND,
-    drmTitles: [requireTitle('drm-widevine'), requireTitle('drm-playready')],
+    drmTitles: [requireTitle('drm-widevine'), requireTitle('drm-playready'), requireTitle('drm-fairplay')],
     licenseKey,
   };
 }

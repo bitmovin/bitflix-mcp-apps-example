@@ -475,7 +475,7 @@ export function Diagnostics({ payload }: { payload?: DiagnosticsPayload }) {
         <div className="diag-btn-row">
           {drmTitles.map(t => {
             const s = drmStatus[t.id];
-            const label = t.badges.find(b => b === 'WIDEVINE' || b === 'PLAYREADY') || t.title;
+            const label = t.badges.find(b => b === 'WIDEVINE' || b === 'PLAYREADY' || b === 'FAIRPLAY') || t.title;
             return (
               <button
                 key={t.id}

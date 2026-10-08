@@ -85,6 +85,8 @@ All streams are **public test assets**, so the demo works out of the box:
 - **VoD** plays HLS and DASH "Art of Motion" test content hosted on `cdn.bitmovin.com`
 - **Live** plays [DASH-IF livesim2](https://livesim2.dashif.org), a real live DASH stream that is fully public
   (CORS `*`, self-hosted segments)
+- **DRM Lab** plays the "Art of Motion" DRM asset behind Widevine and PlayReady, and EZDRM's public FairPlay demo
+  clip hosted on `fps.ezdrm.com`
 - Cover art is inline SVG, composed from one of nine hand-drawn scenes (court, pitch, globe, film, summit, orbit…)
 
 **Content Security Policy:**

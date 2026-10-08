@@ -42,7 +42,8 @@ if (!KEY) {
  * Origins the views may reach beyond the server itself, which Skybridge adds automatically.
  *
  * - `connectDomains` carries manifest, segment and DRM license requests;
- * - `resourceDomains` carries fonts and scripts the widget loads.
+ * - `resourceDomains` carries fonts and scripts the widget loads, plus media the
+ *   browser fetches on its own, as Safari does for HLS.
  *
  * A stream origin absent from here is blocked by the sandbox.
  */
@@ -52,6 +53,7 @@ const VIEW_CSP = {
     'https://*.dashif.org', // DASH-IF livesim2 (public live)
     'https://cwip-shaka-proxy.appspot.com', // Widevine license server (DRM Lab)
     'https://test.playready.microsoft.com', // PlayReady license server (DRM Lab)
+    'https://fps.ezdrm.com', // FairPlay demo stream, certificate and license server (DRM Lab)
     'blob:',
     'data:',
   ],
@@ -60,6 +62,7 @@ const VIEW_CSP = {
     'https://fonts.gstatic.com', // Google Fonts files
     'https://www.gstatic.com', // Google Cast sender SDK (cast_sender.js)
     'https://*.bitmovin.com',
+    'https://fps.ezdrm.com', // FairPlay demo stream under Safari's native HLS (DRM Lab)
     'blob:',
     'data:',
   ],
