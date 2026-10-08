@@ -3,6 +3,7 @@ import { UIFactory } from 'bitmovin-player-ui';
 import 'bitmovin-player-ui/dist/css/bitmovinplayer-ui.css';
 import { useEffect, useRef, useState } from 'react';
 import type { Title } from '../../catalog.js';
+import { STREAMS } from '../../streams.js';
 
 export type PlayerStatus = { state: 'loading' } | { state: 'ready' } | { state: 'error'; detail: string };
 
@@ -97,15 +98,7 @@ export function BitmovinPlayer({ title, licenseKey, onStatus, onPlayerReady, onC
     player.on(PlayerEvent.CastStopped, () => reportCast());
     player.on(PlayerEvent.CastWaitingForDevice, e => reportCast(e.castPayload.deviceName));
 
-    const source: SourceConfig = { title: title.title };
-    if (title.stream.type === 'hls') {
-      source.hls = title.stream.url;
-    } else {
-      source.dash = title.stream.url;
-    }
-    if (title.sourceConfig) {
-      Object.assign(source, title.sourceConfig);
-    }
+    const source: SourceConfig = { ...STREAMS[title.streamId], title: title.title };
 
     let loadTimer: ReturnType<typeof setTimeout> | undefined;
     const timeout = new Promise<never>((_, rej) => {
@@ -147,7 +140,7 @@ export function BitmovinPlayer({ title, licenseKey, onStatus, onPlayerReady, onC
     // every parent render. The title's other fields are keyed by its id, which
     // a static catalog never reuses for different content.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [title.id, title.stream.url, licenseKey]);
+  }, [title.id, title.streamId, licenseKey]);
 
   return (
     <div className="player-stage">

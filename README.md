@@ -24,7 +24,8 @@ See [Bitflix Discover](#bitflix-discover).
 
 ```
 src/
-├── catalog.ts          # content: titles, public test streams, sections, search/recommend
+├── catalog.ts          # content: titles, sections, search/recommend
+├── streams.ts          # public test streams as the player loads them, keyed by id
 ├── index.ts            # entry point: runs the app
 ├── server.ts           # Skybridge app + 8 tools (5 Bitflix, 3 Discover), CSP, plugin-extension metadata
 ├── discover/           # Bitflix Discover, server side

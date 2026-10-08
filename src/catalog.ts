@@ -5,22 +5,13 @@
 // MCP tools query: browse, recommend, what's-live, and play all resolve
 // against the titles below.
 //
-// Every `stream` is a real, publicly playable HLS/DASH manifest. Their origins
-// must appear in VIEW_CSP (src/server.ts), which decides what the widget
-// sandbox lets the player fetch. The metadata, titles, scores and cover art
-// are fictional dressing on top. This is what a streaming network ("Bitflix")
-// would expose if it built its catalog as an MCP App instead of a grid of
-// tiles on a TV.
+// Every title plays a stream from src/streams.ts, referenced by id. The
+// metadata, titles, scores and cover art are fictional dressing on top. This
+// is what a streaming network ("Bitflix") would expose if it built its
+// catalog as an MCP App instead of a grid of tiles on a TV.
 // ─────────────────────────────────────────────────────────────────────────
 
-import type { SourceConfig } from 'bitmovin-player';
-
-export type StreamType = 'hls' | 'dash';
-
-export interface Stream {
-  url: string;
-  type: StreamType;
-}
+import type { StreamId } from './streams.js';
 
 /**
  * A procedural cover-art recipe, drawn rather than fetched, so the iframe CSP
@@ -70,8 +61,7 @@ interface TitleBase {
   score?: string; // "LAL 88 — BOS 74", on a live game or a replay
   tags: string[]; // for search + recommendations
   cover: Cover;
-  stream: Stream;
-  sourceConfig?: Partial<SourceConfig>; // extra player source config (DRM, subtitles, poster…)
+  streamId: StreamId;
 }
 
 /**
@@ -106,43 +96,6 @@ export interface Section {
   itemIds: string[];
 }
 
-// ── Streams ───────────────────────────────────────────────────────────────
-// The clear HLS and DASH renditions of Bitmovin's "Art of Motion" test asset,
-// as recommended by the Bitmovin MCP connector's `streams://recommended`
-// resource. Titles alternate between the two so both pipelines get exercised.
-// Restricting the catalog to these keeps playback working in every MCP host
-// sandbox, with no third-party-CDN CORS surprises.
-const VOD_HLS: Stream = {
-  url: 'https://cdn.bitmovin.com/content/assets/art-of-motion-dash-hls-progressive/m3u8s/f08e80da-bf1d-4e3d-8899-f0f6155f6efa.m3u8',
-  type: 'hls',
-};
-const VOD_DASH: Stream = {
-  url: 'https://cdn.bitmovin.com/content/assets/art-of-motion-dash-hls-progressive/mpds/f08e80da-bf1d-4e3d-8899-f0f6155f6efa.mpd',
-  type: 'dash',
-};
-
-// Genuinely-LIVE stream for the "live" titles — a real live edge, not VOD
-// dressed up as live. We use DASH-IF's livesim2, which is fully public: CORS *
-// and self-hosted segments, so it plays from inside any MCP host sandbox.
-// (Many live test streams serve their segments from a Referer-locked origin,
-// which 403s from a sandboxed widget; livesim2 has no such restriction.)
-const LIVE_DASH: Stream = { url: 'https://livesim2.dashif.org/livesim2/testpic_2s/Manifest.mpd', type: 'dash' };
-
-// ── DRM (protected) test streams ────────────────────────────────────────────
-// The Bitmovin "Art of Motion" DRM asset is multi-DRM (Widevine + PlayReady in
-// the same DASH manifest). We attach ONE key system per title via
-// sourceConfig.drm, so each title independently probes whether that CDM is
-// available in the MCP host's sandbox. Which one plays tells you exactly which
-// DRM the host exposes:
-//   Widevine  → Chromium hosts (Chrome, Claude desktop, ChatGPT web)
-//   PlayReady → Edge / Windows only
-//   FairPlay  → Safari only (covered by the diagnostics EME probe — there's no
-//               public LA/cert to attach for this asset, so we don't fake one)
-const DRM_DASH = 'https://cdn.bitmovin.com/content/assets/art-of-motion_drm/mpds/11331.mpd';
-const WIDEVINE_LA = 'https://cwip-shaka-proxy.appspot.com/no_auth';
-const PLAYREADY_LA =
-  'https://test.playready.microsoft.com/service/rightsmanager.asmx?PlayRight=1&ContentKey=EAtsIJQPd5pFiRUrV9Layw==';
-
 // ── Palette helpers — keep covers cohesive with the widget's dark canvas ──
 const EMBER = '#FF6A1A';
 const SIGNAL = '#FF2D55';
@@ -168,7 +121,7 @@ export const TITLES: Title[] = [
     score: 'LAS 78 — BOS 74',
     tags: ['basketball', 'nba', 'sports', 'live', 'playoffs', 'surge', 'tide'],
     cover: { from: '#2A0E04', to: '#0B0604', accent: COURT, motif: 'court' },
-    stream: LIVE_DASH,
+    streamId: 'livesim2-dash',
   },
   {
     id: 'live-newsroom',
@@ -182,7 +135,7 @@ export const TITLES: Title[] = [
     liveLabel: 'On air',
     tags: ['news', 'breaking', 'world', 'markets', 'live', 'newsroom'],
     cover: { from: '#06121F', to: '#02060B', accent: SIGNAL, motif: 'newsroom' },
-    stream: LIVE_DASH,
+    streamId: 'livesim2-dash',
   },
   {
     id: 'live-derby',
@@ -197,7 +150,7 @@ export const TITLES: Title[] = [
     score: 'HAR 1 — RIV 1',
     tags: ['football', 'soccer', 'derby', 'sports', 'live', 'premier'],
     cover: { from: '#04140B', to: '#020806', accent: TURF, motif: 'pitch' },
-    stream: LIVE_DASH,
+    streamId: 'livesim2-dash',
   },
 
   // ── CONTINUE WATCHING ────────────────────────────────────────────────────
@@ -216,7 +169,7 @@ export const TITLES: Title[] = [
     progressPct: 42,
     tags: ['film', 'drama', 'original', 'fantasy', 'ocean', 'award'],
     cover: { from: '#10142E', to: '#04050E', accent: VIOLET, motif: 'film' },
-    stream: VOD_HLS,
+    streamId: 'art-of-motion-hls',
   },
   {
     id: 'doc-summit',
@@ -233,7 +186,7 @@ export const TITLES: Title[] = [
     progressPct: 71,
     tags: ['documentary', 'nature', 'climbing', 'mountains', 'adventure'],
     cover: { from: '#0A1C24', to: '#03080B', accent: ICEBLUE, motif: 'summit' },
-    stream: VOD_DASH,
+    streamId: 'art-of-motion-dash',
   },
 
   // ── TONIGHT'S GAMES / SPORTS ─────────────────────────────────────────────
@@ -249,7 +202,7 @@ export const TITLES: Title[] = [
     durationMin: 142,
     tags: ['basketball', 'nba', 'replay', 'sports', 'surge', 'kings'],
     cover: { from: '#241004', to: '#0A0603', accent: COURT, motif: 'court' },
-    stream: VOD_HLS,
+    streamId: 'art-of-motion-hls',
   },
   {
     id: 'game-top10',
@@ -263,7 +216,7 @@ export const TITLES: Title[] = [
     durationMin: 9,
     tags: ['highlights', 'basketball', 'dunks', 'sports', 'top10'],
     cover: { from: '#2A1206', to: '#0A0503', accent: EMBER, motif: 'court' },
-    stream: VOD_DASH,
+    streamId: 'art-of-motion-dash',
   },
   {
     id: 'game-ice-classic',
@@ -278,7 +231,7 @@ export const TITLES: Title[] = [
     score: 'FRO 3 — BLD 2 (OT)',
     tags: ['hockey', 'sports', 'winter', 'overtime', 'classic'],
     cover: { from: '#08202C', to: '#020708', accent: ICEBLUE, motif: 'ice' },
-    stream: VOD_DASH,
+    streamId: 'art-of-motion-dash',
   },
 
   // ── THE NEWSROOM ─────────────────────────────────────────────────────────
@@ -294,7 +247,7 @@ export const TITLES: Title[] = [
     durationMin: 22,
     tags: ['news', 'business', 'markets', 'finance', 'economy'],
     cover: { from: '#04161A', to: '#01080A', accent: MINT, motif: 'globe' },
-    stream: VOD_HLS,
+    streamId: 'art-of-motion-hls',
   },
   {
     id: 'news-world',
@@ -307,7 +260,7 @@ export const TITLES: Title[] = [
     durationMin: 48,
     tags: ['news', 'world', 'evening', 'flagship', 'global'],
     cover: { from: '#0A1020', to: '#02040A', accent: ICEBLUE, motif: 'globe' },
-    stream: VOD_HLS,
+    streamId: 'art-of-motion-hls',
   },
   {
     id: 'news-deepdive',
@@ -321,7 +274,7 @@ export const TITLES: Title[] = [
     durationMin: 38,
     tags: ['news', 'investigation', 'documentary', 'longform', 'exclusive'],
     cover: { from: '#1A0A18', to: '#070207', accent: SIGNAL, motif: 'newsroom' },
-    stream: VOD_DASH,
+    streamId: 'art-of-motion-dash',
   },
 
   // ── BITFLIX ORIGINALS ───────────────────────────────────────────────────
@@ -339,7 +292,7 @@ export const TITLES: Title[] = [
     durationMin: 52,
     tags: ['series', 'scifi', 'original', 'space', 'thriller', 'drama'],
     cover: { from: '#0B0A2A', to: '#030210', accent: VIOLET, motif: 'orbit' },
-    stream: VOD_DASH,
+    streamId: 'art-of-motion-dash',
   },
   {
     id: 'orig-encore',
@@ -355,7 +308,7 @@ export const TITLES: Title[] = [
     durationMin: 47,
     tags: ['series', 'music', 'drama', 'original', 'comedy', 'award'],
     cover: { from: '#241608', to: '#0A0703', accent: GOLD, motif: 'stage' },
-    stream: VOD_HLS,
+    streamId: 'art-of-motion-hls',
   },
   {
     id: 'orig-tides',
@@ -371,7 +324,7 @@ export const TITLES: Title[] = [
     durationMin: 55,
     tags: ['series', 'crime', 'thriller', 'original', 'mystery'],
     cover: { from: '#02161C', to: '#010708', accent: MINT, motif: 'summit' },
-    stream: VOD_DASH,
+    streamId: 'art-of-motion-dash',
   },
 
   // ── FILMS WE LOVE ─────────────────────────────────────────────────────────
@@ -389,7 +342,7 @@ export const TITLES: Title[] = [
     durationMin: 12,
     tags: ['film', 'scifi', 'action', 'classic', 'robots'],
     cover: { from: '#1C0A06', to: '#070302', accent: EMBER, motif: 'film' },
-    stream: VOD_DASH,
+    streamId: 'art-of-motion-dash',
   },
   {
     id: 'film-sintel',
@@ -405,7 +358,7 @@ export const TITLES: Title[] = [
     durationMin: 15,
     tags: ['film', 'animation', 'fantasy', 'adventure', 'classic'],
     cover: { from: '#221608', to: '#080502', accent: GOLD, motif: 'summit' },
-    stream: VOD_HLS,
+    streamId: 'art-of-motion-hls',
   },
   {
     id: 'film-motion',
@@ -421,7 +374,7 @@ export const TITLES: Title[] = [
     durationMin: 4,
     tags: ['film', 'action', 'parkour', 'sports', 'showcase'],
     cover: { from: '#0A1A1E', to: '#030708', accent: MINT, motif: 'stage' },
-    stream: VOD_DASH,
+    streamId: 'art-of-motion-dash',
   },
 
   // ── DRM LAB (protected — probes which CDM the MCP host's sandbox exposes) ──
@@ -436,8 +389,7 @@ export const TITLES: Title[] = [
     badges: ['DRM', 'WIDEVINE', '4K'],
     tags: ['drm', 'widevine', 'protected', 'lab', 'test'],
     cover: { from: '#0B0A2A', to: '#030210', accent: VIOLET, motif: 'orbit' },
-    stream: { url: DRM_DASH, type: 'dash' },
-    sourceConfig: { drm: { widevine: { LA_URL: WIDEVINE_LA } } },
+    streamId: 'art-of-motion-drm-widevine',
   },
   {
     id: 'drm-playready',
@@ -450,8 +402,7 @@ export const TITLES: Title[] = [
     badges: ['DRM', 'PLAYREADY', '4K'],
     tags: ['drm', 'playready', 'protected', 'lab', 'test'],
     cover: { from: '#241608', to: '#0A0703', accent: GOLD, motif: 'stage' },
-    stream: { url: DRM_DASH, type: 'dash' },
-    sourceConfig: { drm: { playready: { LA_URL: PLAYREADY_LA } } },
+    streamId: 'art-of-motion-drm-playready',
   },
 ];
 
