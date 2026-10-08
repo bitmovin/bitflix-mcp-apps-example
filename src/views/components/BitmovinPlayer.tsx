@@ -62,6 +62,14 @@ export function BitmovinPlayer({ title, licenseKey, onStatus, onPlayerReady, onC
         receiverVersion: 'v3',
       },
     });
+
+    // Anonymous CORS mode, so native HLS playback (Safari) sends an Origin header.
+    // Only matters for a CDN whose access rule keys on Origin, which
+    // cdn.bitmovin.com's does; other hosts play either way.
+    const video = document.createElement('video');
+    video.crossOrigin = 'anonymous';
+    player.setVideoElement(video);
+
     const uiManager = UIFactory.buildUI(player);
 
     const reportCast = (device?: string) => {
