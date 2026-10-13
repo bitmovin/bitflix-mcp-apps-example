@@ -397,3 +397,33 @@
   margin-top: 8px;
   word-break: break-all;
 }
+
+/* ── Posters: key art over the drawn cover ──────────────────────────────── */
+.poster-img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+.poster-img.fit-cover {
+  object-fit: cover;
+}
+/* A portrait poster in a 16:9 frame, or one that must not be cropped: shown whole. */
+.poster-img.fit-contain {
+  object-fit: contain;
+  padding: 6%;
+  filter: drop-shadow(0 10px 24px rgba(0, 0, 0, 0.55));
+}
+/* In the hero the text sits on the left, so the poster stands on the right. */
+.poster-img.slot-hero.fit-contain {
+  object-position: right center;
+  padding: 18px 28px;
+}
+.poster-img.slot-thumb.fit-contain {
+  padding: 2px;
+}
+.reel-thumb .cover-fill {
+  position: absolute;
+  inset: 0;
+}

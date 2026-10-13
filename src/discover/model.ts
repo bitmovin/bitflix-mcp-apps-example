@@ -19,6 +19,16 @@ export interface Stream {
 export type { Cover, Motif } from '../catalog.js';
 import type { Cover } from '../catalog.js';
 
+/**
+ * A film's key art. The image ships with the views (src/views/assets/posters/<film id>.jpg),
+ * so it loads from the app's own server, which the sandbox already allows.
+ */
+export interface Poster {
+  orientation: 'portrait' | 'landscape';
+  /** Show it whole, never cropped: for artwork whose licence forbids changes (CC BY-ND). */
+  noCrop?: boolean;
+}
+
 export const GENRES = ['Fantasy', 'Sci-fi', 'Comedy', 'Action', 'Drama'] as const;
 
 /** Longest search text a tool accepts; the widget's search box uses the same limit. */
@@ -48,6 +58,7 @@ export interface Film {
   cover: Cover;
   watchUrl: string; // where the full film lives
   tvUrl?: string; // a deep link into the provider's TV app; the TV hand-off falls back to watchUrl
+  poster?: Poster; // key art the views show instead of the drawn cover; absent: the drawn cover
   runtimeSec?: number; // known for the films whose stream is hosted
   preview?: Preview; // absent when no stream is hosted for the title
 }

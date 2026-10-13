@@ -143,6 +143,12 @@ playground. Bitmovin does not control those hosts; for your own app, serve previ
 `DISCOVER_CSP` allow-lists exactly those stream origins plus `licensing.bitmovin.com`, and declares Blender Studio as
 a redirect domain so ChatGPT opens the watch links without its safe-link interstitial.
 
+**Posters.** Each film shows its poster from the project's gallery on Blender Studio (Tears of Steel has none there,
+so it uses the project's key art). The images ship with the views in `src/views/assets/posters/`, so they load from
+the app's own server and need no extra CSP entry. Portrait posters fill the 2:3 cards and stand whole on the drawn
+cover in 16:9 frames. Agent 327's poster is CC BY-ND 4.0, so it is never cropped (`Poster.noCrop`); the others are
+CC BY 4.0. A film without a poster falls back to the drawn cover.
+
 **License key.** Discover sends the player key in each tool result's `_meta`, which only the widget reads, not in
 `structuredContent`, which hosts also hand to the model. That keeps it out of the conversation, not secret: anyone
 who can reach the MCP URL can call a tool and read it. Use a dedicated key, never a production one.
@@ -267,7 +273,7 @@ To run this app you must get your **own** Bitmovin Player license key from the
 
 The streams in the catalog are third-party public test assets, used for demonstration only.
 
-Bitflix Discover's films are © Blender Foundation | studio.blender.org, published under Creative Commons Attribution
+Bitflix Discover's films and posters are © Blender Foundation | studio.blender.org, published under Creative Commons Attribution
 licenses (CC BY 4.0 unless noted otherwise, see Blender Studio's
 [terms](https://studio.blender.org/terms-and-conditions/)).
 

@@ -2,6 +2,7 @@
 // where possible, so adding a film exercises these checks instead of breaking them.
 
 import assert from 'node:assert/strict';
+import { readdirSync } from 'node:fs';
 import { describe, it } from 'node:test';
 import { FILMS, STREAM_ORIGINS, WATCH_ORIGINS, checkFilm, getFilm } from '../../src/discover/catalog.js';
 import { hasPreview } from '../../src/discover/model.js';
@@ -64,6 +65,16 @@ describe('catalogue data', () => {
     ]) {
       assert.throws(() => checkFilm(bad), /not/, `accepted ${bad.watchUrl} / ${bad.cover.accent}`);
     }
+  });
+
+  it('ships one poster image per film that has a poster, and none without a film', () => {
+    const files = readdirSync('src/views/assets/posters').filter(f => f.endsWith('.jpg'));
+    const withPoster = FILMS.filter(f => f.poster).map(f => `${f.id}.jpg`);
+    assert.deepEqual(files.sort(), withPoster.sort());
+  });
+
+  it("never crops Agent 327's poster, whose licence (CC BY-ND 4.0) forbids changes", () => {
+    assert.equal(getFilm('agent-327')?.poster?.noCrop, true);
   });
 
   it('has both previewable and link-out-only films, so both paths are exercised', () => {

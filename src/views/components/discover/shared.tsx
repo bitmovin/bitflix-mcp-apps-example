@@ -2,7 +2,7 @@ import qrcode from 'qrcode-generator';
 import { type ReactNode, useMemo, useState } from 'react';
 import { useOpenExternal } from 'skybridge/web';
 import { type Brand, type Film, hasPreview } from '../../../discover/model.js';
-import { ICON } from '../cover.js';
+import { ICON, coverArt } from '../cover.js';
 import { Icon } from '../Icon.js';
 
 /** The app's top bar: wordmark, a section label, and an optional right-hand slot. */
@@ -163,5 +163,50 @@ export function TvHandoff({ film, provider }: { film: Film; provider: string }) 
         </div>
       ) : null}
     </div>
+  );
+}
+
+// The posters ship with the views, so they load from the app's own server.
+const POSTER_URLS = import.meta.glob<string>('../../assets/posters/*.jpg', {
+  eager: true,
+  query: '?url',
+  import: 'default',
+});
+const posterUrl = (id: string) => POSTER_URLS[`../../assets/posters/${id}.jpg`];
+
+/** Where a cover is drawn: a 2:3 card, a 16:9 card, the 16:9 hero, or a small queue thumbnail. */
+export type CoverSlot = 'poster' | 'wide' | 'hero' | 'thumb';
+
+/**
+ * A film's cover: its poster where it has one, over the drawn cover as a
+ * backdrop; otherwise the drawn cover alone. A portrait poster fills a 2:3
+ * card and sits whole on the backdrop in a 16:9 one; a poster marked noCrop
+ * is never cropped.
+ */
+export function CoverImage({ film, slot }: { film: Film; slot: CoverSlot }) {
+  const url = film.poster ? posterUrl(film.id) : undefined;
+  const fills =
+    film.poster &&
+    !film.poster.noCrop &&
+    (film.poster.orientation === 'landscape' || slot === 'poster' || slot === 'thumb');
+  return (
+    <>
+      <span
+        className="cover-fill"
+        aria-hidden="true"
+        dangerouslySetInnerHTML={{
+          __html: coverArt(film.cover, url ? '' : film.title.charAt(0), { hero: slot === 'hero' }),
+        }}
+      />
+      {url ? (
+        <img
+          className={`poster-img ${fills ? 'fit-cover' : 'fit-contain'} slot-${slot}`}
+          src={url}
+          alt=""
+          loading="lazy"
+          decoding="async"
+        />
+      ) : null}
+    </>
   );
 }

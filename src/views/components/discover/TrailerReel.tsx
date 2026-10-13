@@ -2,10 +2,10 @@ import '@/views/css/discover.css';
 import { useEffect, useRef, useState } from 'react';
 import { type ReelPayload, nextIndex } from '../../../discover/model.js';
 import { useAutoHeight } from '../../hooks.js';
-import { ICON, coverArt } from '../cover.js';
+import { ICON } from '../cover.js';
 import { Icon } from '../Icon.js';
 import { PreviewPlayerLazy } from './PreviewPlayerLazy.js';
-import { Credits, FilmMeta, ModelContext, Topbar, WatchButton } from './shared.js';
+import { CoverImage, Credits, FilmMeta, ModelContext, Topbar, WatchButton } from './shared.js';
 
 const ADVANCE_DELAY_MS = 4_000; // time the end (or error) card stays up before the reel moves on
 const MAX_FAILURES_IN_A_ROW = 3; // then the reel stops: the host is probably blocking every stream
@@ -147,11 +147,9 @@ export function TrailerReel({ payload, licenseKey }: { payload?: ReelPayload; li
               aria-current={i === index ? 'true' : undefined}
               onClick={() => goTo(i)}
             >
-              <span
-                className="reel-thumb"
-                aria-hidden="true"
-                dangerouslySetInnerHTML={{ __html: coverArt(f.cover, f.title.charAt(0)) }}
-              />
+              <span className="reel-thumb" aria-hidden="true">
+                <CoverImage film={f} slot="thumb" />
+              </span>
               <span className="reel-text">
                 <span className="t">{f.title}</span>
                 <span className="k">
