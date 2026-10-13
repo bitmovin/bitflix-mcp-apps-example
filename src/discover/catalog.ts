@@ -27,8 +27,12 @@ export const BRAND: Brand = {
 // Blender Studio publishes its content under CC BY 4.0 "unless notified
 // otherwise" (https://studio.blender.org/terms-and-conditions/); the oldest
 // films carry earlier CC BY versions.
+// The posters come from each project's gallery on Blender Studio, under the
+// same CC BY 4.0, except Agent 327's, which is CC BY-ND 4.0 and is therefore
+// never cropped (Poster.noCrop). Tears of Steel has no poster there, so it uses
+// the project's key art.
 export const CREDITS =
-  'Films © Blender Foundation | studio.blender.org, under Creative Commons Attribution licenses (CC BY 4.0 unless noted otherwise).';
+  'Films and posters © Blender Foundation | studio.blender.org, under Creative Commons Attribution licenses (CC BY 4.0 unless noted otherwise).';
 
 // ── Streams ───────────────────────────────────────────────────────────────
 // A widget runs in a sandboxed iframe on the host's own domain, so every media
@@ -82,6 +86,7 @@ export const FILMS: Film[] = [
     tags: ['fantasy', 'dragon', 'adventure', 'quest', 'animated', 'epic', 'snow'],
     cover: { from: '#1A0E22', to: '#06040A', accent: VIOLET, motif: 'summit' },
     watchUrl: studio('sintel'),
+    poster: { orientation: 'portrait' },
     runtimeSec: 888,
     preview: { stream: SINTEL, startSec: 30, durationSec: PREVIEW_SEC },
   },
@@ -95,6 +100,7 @@ export const FILMS: Film[] = [
     tags: ['sci-fi', 'robots', 'live action', 'vfx', 'amsterdam', 'future', 'action'],
     cover: { from: '#071822', to: '#02070B', accent: ICEBLUE, motif: 'orbit' },
     watchUrl: studio('tears-of-steel'),
+    poster: { orientation: 'landscape' },
     runtimeSec: 734,
     preview: { stream: TEARS_OF_STEEL, startSec: 90, durationSec: PREVIEW_SEC },
   },
@@ -108,6 +114,7 @@ export const FILMS: Film[] = [
     tags: ['comedy', 'family', 'animals', 'rabbit', 'animated', 'kids', 'funny'],
     cover: { from: '#0A1A0E', to: '#030805', accent: TURF, motif: 'summit' },
     watchUrl: studio('big-buck-bunny'),
+    poster: { orientation: 'portrait' },
     runtimeSec: 635,
     preview: { stream: BIG_BUCK_BUNNY, startSec: 40, durationSec: PREVIEW_SEC },
   },
@@ -120,6 +127,7 @@ export const FILMS: Film[] = [
     tags: ['fantasy', 'nature', 'spirits', 'dog', 'animated', 'beautiful'],
     cover: { from: '#081A16', to: '#020807', accent: MINT, motif: 'summit' },
     watchUrl: studio('spring'),
+    poster: { orientation: 'portrait' },
   },
   {
     id: 'sprite-fright',
@@ -131,6 +139,7 @@ export const FILMS: Film[] = [
     tags: ['comedy', 'horror', 'forest', 'teens', 'animated', 'spooky', 'halloween'],
     cover: { from: '#1C1006', to: '#080402', accent: GOLD, motif: 'stage' },
     watchUrl: studio('sprite-fright'),
+    poster: { orientation: 'portrait' },
   },
   {
     id: 'charge',
@@ -142,6 +151,7 @@ export const FILMS: Film[] = [
     tags: ['action', 'dystopia', 'robots', 'thriller', 'animated', 'tense'],
     cover: { from: '#200A0C', to: '#0A0304', accent: SIGNAL, motif: 'film' },
     watchUrl: studio('charge'),
+    poster: { orientation: 'portrait' },
   },
   {
     id: 'wing-it',
@@ -153,6 +163,7 @@ export const FILMS: Film[] = [
     tags: ['comedy', 'space', 'flight', 'animated', 'funny', 'family'],
     cover: { from: '#0D0B26', to: '#03020C', accent: VIOLET, motif: 'orbit' },
     watchUrl: studio('wing-it'),
+    poster: { orientation: 'portrait' },
   },
   {
     id: 'coffee-run',
@@ -163,6 +174,7 @@ export const FILMS: Film[] = [
     tags: ['drama', 'romance', 'memories', 'animated', 'short'],
     cover: { from: '#22140A', to: '#090503', accent: EMBER, motif: 'film' },
     watchUrl: studio('coffee-run'),
+    poster: { orientation: 'portrait' },
   },
   {
     id: 'agent-327',
@@ -174,6 +186,7 @@ export const FILMS: Film[] = [
     tags: ['action', 'spy', 'comedy', 'agent', 'animated'],
     cover: { from: '#1E1408', to: '#080503', accent: GOLD, motif: 'film' },
     watchUrl: studio('agent-327'),
+    poster: { orientation: 'portrait', noCrop: true },
   },
   {
     id: 'cosmos-laundromat',
@@ -185,6 +198,7 @@ export const FILMS: Film[] = [
     tags: ['sci-fi', 'surreal', 'sheep', 'animated', 'weird'],
     cover: { from: '#0A1820', to: '#03080B', accent: ICEBLUE, motif: 'globe' },
     watchUrl: studio('cosmos-laundromat'),
+    poster: { orientation: 'portrait' },
   },
   {
     id: 'elephants-dream',
@@ -195,6 +209,7 @@ export const FILMS: Film[] = [
     tags: ['sci-fi', 'surreal', 'classic', 'machine', 'animated'],
     cover: { from: '#1A0A1C', to: '#070308', accent: SIGNAL, motif: 'orbit' },
     watchUrl: studio('elephants-dream'),
+    poster: { orientation: 'portrait' },
   },
 ];
 

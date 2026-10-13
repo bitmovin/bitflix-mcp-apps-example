@@ -13,10 +13,10 @@ import {
 } from '../../../discover/model.js';
 import { useCallTool } from '../../../helpers.js';
 import { useAutoHeight } from '../../hooks.js';
-import { ICON, coverArt } from '../cover.js';
+import { ICON } from '../cover.js';
 import { Icon } from '../Icon.js';
 import { PreviewPlayerLazy } from './PreviewPlayerLazy.js';
-import { Credits, FilmMeta, ModelContext, Topbar, TvHandoff, WatchButton } from './shared.js';
+import { CoverImage, Credits, FilmMeta, ModelContext, Topbar, TvHandoff, WatchButton } from './shared.js';
 
 type Payload = DiscoverPayload | FilmPayload;
 
@@ -69,15 +69,11 @@ function FullscreenToggle() {
   );
 }
 
-function FilmCard({ film, onOpen }: { film: Film; onOpen: (f: Film) => void }) {
+function FilmCard({ film, layout, onOpen }: { film: Film; layout: Rail['layout']; onOpen: (f: Film) => void }) {
   return (
     <button className="card film-card" onClick={() => onOpen(film)}>
       <div className="art">
-        <div
-          className="cover-fill"
-          aria-hidden="true"
-          dangerouslySetInnerHTML={{ __html: coverArt(film.cover, film.title.charAt(0)) }}
-        />
+        <CoverImage film={film} slot={layout} />
         <div className="play-overlay" aria-hidden="true">
           <div className="disc" dangerouslySetInnerHTML={{ __html: hasPreview(film) ? ICON.play : ICON.info }} />
         </div>
@@ -105,7 +101,7 @@ function RailRow({ rail, onOpen }: { rail: Rail; onOpen: (f: Film) => void }) {
       </div>
       <div className="track">
         {rail.items.map(f => (
-          <FilmCard key={f.id} film={f} onOpen={onOpen} />
+          <FilmCard key={f.id} film={f} layout={rail.layout} onOpen={onOpen} />
         ))}
       </div>
     </section>
@@ -116,11 +112,7 @@ function Hero({ film, provider, onOpen }: { film: Film; provider: string; onOpen
   return (
     <div className="hero reveal">
       <div className="art">
-        <div
-          className="cover-fill"
-          aria-hidden="true"
-          dangerouslySetInnerHTML={{ __html: coverArt(film.cover, film.title.charAt(0), { hero: true }) }}
-        />
+        <CoverImage film={film} slot="hero" />
       </div>
       <div className="scrim" />
       <div className="hero-inner">
@@ -271,11 +263,7 @@ function FilmScreen({
       ) : (
         <div className="hero no-preview">
           <div className="art">
-            <div
-              className="cover-fill"
-              aria-hidden="true"
-              dangerouslySetInnerHTML={{ __html: coverArt(f.cover, f.title.charAt(0), { hero: true }) }}
-            />
+            <CoverImage film={f} slot="hero" />
           </div>
           <div className="scrim" />
           <div className="hero-inner">
