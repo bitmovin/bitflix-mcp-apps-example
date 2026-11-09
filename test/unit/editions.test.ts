@@ -12,6 +12,7 @@ import {
   TITLES,
 } from '../../src/catalog.js';
 import { EDITION_IDS, EDITIONS } from '../../src/editions.js';
+import { FIXTURES, matchdayPayload } from '../../src/matchday.js';
 
 const ids = (p: { sections: { items: { id: string }[] }[] }) => p.sections.flatMap(s => s.items.map(t => t.id));
 
@@ -79,6 +80,24 @@ describe('edition boundaries', () => {
     for (const t of TITLES.filter(EDITIONS.streaming.includes)) {
       assert.ok(!['game', 'highlight', 'news'].includes(t.kind) && !t.tags.includes('drm'), t.id);
     }
+  });
+
+  it('sports has the match centre, carries every live broadcast, and links games to it', () => {
+    const ed = EDITIONS.sports;
+    assert.ok(ed.tools.includes('matchday'));
+    assert.ok(ed.chips.some(c => c.tool === 'matchday'));
+    for (const f of FIXTURES) {
+      if (f.state !== 'live') {
+        continue;
+      }
+      const live = getTitle(f.titleId);
+      assert.ok(live && ed.includes(live), `${f.id} plays ${f.titleId}, which is outside Sports`);
+    }
+    const p = matchdayPayload({ licenseKey: 'k', fixture: FIXTURES[0]!, brand: ed.brand });
+    assert.equal(p.brand.edition, 'Sports');
+    const derby = getTitle('live-derby')!;
+    assert.equal(playerPayload({ licenseKey: 'k', title: derby, edition: ed }).matchCentre, true);
+    assert.equal(playerPayload({ licenseKey: 'k', title: derby, edition: EDITIONS.news }).matchCentre, false);
   });
 
   it('a title from another edition does not resolve', () => {

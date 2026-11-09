@@ -29,8 +29,9 @@ video provider would build it. See [Bitflix Editions](#bitflix-editions).
 src/
 ├── catalog.ts          # content: titles, public test streams, search/recommend, screens per edition
 ├── editions.ts         # Bitflix Editions: all-in-one, Sports, News, Streaming
+├── matchday.ts         # match centre: fixtures, key moments as replay clips, stats
 ├── index.ts            # entry point: runs the app
-├── server.ts           # Skybridge app + 8 tools (5 Bitflix, 3 Discover), CSP, plugin-extension metadata
+├── server.ts           # Skybridge app + 9 tools (6 Bitflix, 3 Discover), CSP, plugin-extension metadata
 ├── discover/           # Bitflix Discover, server side
 │   ├── model.ts        #   shared types and pure helpers, the only Discover module views import
 │   ├── catalog.ts      #   the open movies, preview windows, stream and watch origins
@@ -158,16 +159,19 @@ who can reach the MCP URL can call a tool and read it. Use a dedicated key, neve
 One codebase, four apps. A deployment serves one edition, picked by the `BITFLIX_EDITION` environment variable, so
 each edition is its own MCP server, connector and ChatGPT nav entry:
 
-| `BITFLIX_EDITION` | App               | Looks like                         | Tools                                                 | ChatGPT entry points                |
-| ----------------- | ----------------- | ---------------------------------- | ----------------------------------------------------- | ----------------------------------- |
-| `all` (default)   | Bitflix           | everything, plus Discover          | all eight                                             | Discover (nav), Trailer Reel (side) |
-| `sports`          | Bitflix Sports    | a sports league (NBA-like)         | `browse_catalog`, `whats_live`, `play_title`          | Home (nav), Live Scores (side)      |
-| `news`            | Bitflix News      | a news broadcaster (BBC-like)      | the above plus `get_recommendations` (catch up)       | Home (nav), Live Channel (side)     |
-| `streaming`       | Bitflix Streaming | a streaming service (Netflix-like) | `browse_catalog`, `get_recommendations`, `play_title` | Home (nav), For You (side)          |
+| `BITFLIX_EDITION` | App               | Looks like                         | Tools                                                                          | ChatGPT entry points                |
+| ----------------- | ----------------- | ---------------------------------- | ------------------------------------------------------------------------------ | ----------------------------------- |
+| `all` (default)   | Bitflix           | everything, plus Discover          | all nine                                                                       | Discover (nav), Trailer Reel (side) |
+| `sports`          | Bitflix Sports    | a sports league (NBA-like)         | `browse_catalog`, `matchday`, `whats_live`, `play_title`                       | Home (nav), Live Scores (side)      |
+| `news`            | Bitflix News      | a news broadcaster (BBC-like)      | `browse_catalog`, `whats_live`, `play_title`, `get_recommendations` (catch up) | Home (nav), Live Channel (side)     |
+| `streaming`       | Bitflix Streaming | a streaming service (Netflix-like) | `browse_catalog`, `get_recommendations`, `play_title`                          | Home (nav), For You (side)          |
 
 Each edition has its own name, title selection, home screen and filter chips, and every screen, search and "up next"
 stays inside it. In the News edition, `get_recommendations` becomes "Catch me up": every bulletin you missed, then the
-live channel. Everything an edition is lives in `src/editions.ts`; the server registers only that edition's tools.
+live channel. The Sports edition adds the match centre, from its Match Centre chip or a live game's "Match centre"
+button: a live scoreboard, key moments you can replay as clips from the Bitmovin sports mashup, stats, and the day's
+other fixtures, across football, basketball, American football and track cycling. Everything an edition is lives in
+`src/editions.ts`; the server registers only that edition's tools.
 
 Run an edition locally with `BITFLIX_EDITION=sports npm run dev`. To deploy one, create an Alpic project per edition
 from this repo and set `BITFLIX_EDITION` (and `BITMOVIN_PLAYER_KEY`) in its environment variables.

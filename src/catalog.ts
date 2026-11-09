@@ -73,6 +73,7 @@ interface TitleBase {
   cover: Cover;
   stream: Stream;
   sourceConfig?: Partial<SourceConfig>; // extra player source config (DRM, subtitles, poster…)
+  clipEndSec?: number; // a clip cut from a longer asset stops here; it starts at sourceConfig.options.startOffset
 }
 
 /**
@@ -113,7 +114,7 @@ export interface Section {
 // resource. Titles alternate between the two so both pipelines get exercised.
 // Restricting the catalog to these keeps playback working in every MCP host
 // sandbox, with no third-party-CDN CORS surprises.
-const VOD_HLS: Stream = {
+export const VOD_HLS: Stream = {
   url: 'https://cdn.bitmovin.com/content/assets/art-of-motion-dash-hls-progressive/m3u8s/f08e80da-bf1d-4e3d-8899-f0f6155f6efa.m3u8',
   type: 'hls',
 };
@@ -195,7 +196,7 @@ export const TITLES: Title[] = [
       'Two halves of the city, one trophy. Harbour United visit Riverside in a sold-out derby with the title race hanging in the balance.',
     badges: ['4K'],
     liveLabel: "63'",
-    score: 'HAR 1 — RIV 1',
+    score: 'HAR 2 — RIV 0',
     tags: ['football', 'soccer', 'derby', 'sports', 'live', 'premier'],
     cover: { from: '#04140B', to: '#020806', accent: TURF, motif: 'pitch' },
     stream: LIVE_DASH,
@@ -570,7 +571,7 @@ type ChipBase = { label: string; key: string };
  */
 export type ChipDef =
   | (ChipBase & { tool: 'browse_catalog'; category?: string }) // no category means the edition's home
-  | (ChipBase & { tool: 'get_recommendations' | 'whats_live' });
+  | (ChipBase & { tool: 'get_recommendations' | 'whats_live' | 'matchday' });
 
 export type BrowseScreen = 'home' | 'live' | 'recommendations' | 'category' | 'search';
 
@@ -594,6 +595,7 @@ export interface PlayerPayload {
   brand: Brand;
   title: Title;
   upNext: Title[];
+  matchCentre?: boolean; // the edition has the match centre, so a game's player links to it
   licenseKey: string;
 }
 
@@ -792,5 +794,6 @@ export function playerPayload({
   const upNext = titlesOf(edition)
     .filter(t => t.id !== title.id && (t.kind === title.kind || t.tags.some(tag => title.tags.includes(tag))))
     .slice(0, 4);
-  return { view: 'player', brand: edition.brand, title, upNext, licenseKey };
+  const matchCentre = edition.tools.includes('matchday');
+  return { view: 'player', brand: edition.brand, title, upNext, matchCentre, licenseKey };
 }

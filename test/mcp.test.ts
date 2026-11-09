@@ -58,6 +58,7 @@ describe('tools/list', () => {
       'browse_catalog',
       'discover',
       'get_recommendations',
+      'matchday',
       'play_title',
       'preview_film',
       'run_diagnostics',

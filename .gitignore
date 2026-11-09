@@ -16,3 +16,6 @@ tsconfig.tsbuildinfo
 # misc
 *.log
 .DS_Store
+
+# local Claude Code session files (launch configs with machine-specific paths)
+.claude/

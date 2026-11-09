@@ -2,88 +2,18 @@ import '@/views/css/index.css';
 import type { PlayerAPI } from 'bitmovin-player';
 import { useEffect, useRef, useState } from 'react';
 import { useDisplayMode } from 'skybridge/web';
-import {
-  BRAND,
-  type Badge,
-  type Brand,
-  type BrowsePayload,
-  type ChipDef,
-  type PlayerPayload,
-  type Rail,
-  type Title,
-} from '../../catalog.js';
+import { BRAND, type BrowsePayload, type ChipDef, type PlayerPayload, type Rail, type Title } from '../../catalog.js';
 import { useCallTool } from '../../helpers.js';
+import { type MatchdayPayload, fixtureForTitle } from '../../matchday.js';
 import { useAutoHeight } from '../hooks.js';
 import type { CastState } from './BitmovinPlayer.js';
 import { BitmovinPlayerLazy } from './BitmovinPlayerLazy.js';
+import { Badges, FooterNote, LiveBadge, Topbar } from './chrome.js';
 import { ICON, coverArt } from './cover.js';
 import { Icon } from './Icon.js';
+import { MatchdayView } from './Matchday.js';
 
-type Payload = BrowsePayload | PlayerPayload;
-
-// ── small pieces ───────────────────────────────────────────────────────────
-function FooterNote({ brand }: { brand: Brand }) {
-  return (
-    <div className="footer-note">
-      <b>{brand.name}</b> — a streaming service inside the chat · video by <b>Bitmovin Player</b>
-    </div>
-  );
-}
-
-function Badges({ items }: { items: Badge[] }) {
-  return (
-    <span className="badges">
-      {items.map((b, i) => (
-        <span key={i} className="badge">
-          {b}
-        </span>
-      ))}
-    </span>
-  );
-}
-
-/** The live marker, which the delivery discriminant carries rather than a badge. */
-function LiveBadge() {
-  return <span className="badge live">LIVE</span>;
-}
-
-function LiveClock() {
-  const [now, setNow] = useState(() => new Date());
-  useEffect(() => {
-    const id = setInterval(() => setNow(new Date()), 1000);
-    return () => clearInterval(id);
-  }, []);
-  const p = (n: number) => String(n).padStart(2, '0');
-  return (
-    <span className="onair-time">
-      {p(now.getHours())}:{p(now.getMinutes())}:{p(now.getSeconds())}
-    </span>
-  );
-}
-
-function Topbar({ brand, prompt }: { brand: Brand; prompt?: string }) {
-  return (
-    <div className="topbar">
-      <div className="wordmark">
-        {brand.wordmark}
-        <span className="dot">.</span>
-      </div>
-      {brand.edition ? <div className="edition-tag">{brand.edition}</div> : null}
-      <div className="onair" aria-label="On air" title={`${brand.name} is broadcasting`}>
-        <span className="onair-dot" />
-        ON AIR
-        <LiveClock />
-      </div>
-      <div className="spacer" />
-      {prompt ? (
-        <div className="prompt-chip">
-          <span className="mic" />
-          {`“${prompt}”`}
-        </div>
-      ) : null}
-    </div>
-  );
-}
+type Payload = BrowsePayload | PlayerPayload | MatchdayPayload;
 
 function Card({ t, layout, onPlay }: { t: Title; layout: string; onPlay: (t: Title) => void }) {
   return (
@@ -283,13 +213,24 @@ function BrowseView({
   );
 }
 
-function PlayerView({ p, onBack, onPlay }: { p: PlayerPayload; onBack: () => void; onPlay: (t: Title) => void }) {
+function PlayerView({
+  p,
+  onBack,
+  onPlay,
+  onMatchday,
+}: {
+  p: PlayerPayload;
+  onBack: () => void;
+  onPlay: (t: Title) => void;
+  onMatchday: (fixtureId: string) => void;
+}) {
   const [displayMode, setDisplayMode] = useDisplayMode();
   const playerRef = useRef<PlayerAPI | null>(null);
   const rootRef = useRef<HTMLDivElement>(null);
   const [cast, setCast] = useState<CastState>({ available: false, casting: false });
   const t = p.title;
   const isFs = displayMode === 'fullscreen';
+  const fixture = p.matchCentre ? fixtureForTitle(t.id) : undefined;
 
   useAutoHeight(rootRef);
 
@@ -368,6 +309,12 @@ function PlayerView({ p, onBack, onPlay }: { p: PlayerPayload; onBack: () => voi
               <Icon html={ICON.back} />
               Back
             </button>
+            {fixture ? (
+              <button className="iconbtn accent" onClick={() => onMatchday(fixture.id)}>
+                <Icon html={ICON.info} />
+                Match centre
+              </button>
+            ) : null}
             <button
               className={`iconbtn ${cast.available || cast.casting ? 'accent' : ''}`}
               disabled={!cast.available && !cast.casting}
@@ -401,23 +348,43 @@ function PlayerView({ p, onBack, onPlay }: { p: PlayerPayload; onBack: () => voi
 }
 
 // ── root ────────────────────────────────────────────────────────────────────
+/**
+ * Identity of a screen, so new content resets interaction state.
+ */
+function keyOf(p: Payload): string {
+  switch (p.view) {
+    case 'browse':
+      return `b:${p.headline}`;
+    case 'player':
+      return `p:${p.title.id}`;
+    case 'matchday':
+      return `m:${p.fixture.id}:${p.focusMomentId ?? ''}`;
+  }
+}
+
 function makePlayer(title: Title, browse: BrowsePayload | null, licenseKey: string, base?: Payload): PlayerPayload {
   const all = browse ? browse.sections.flatMap(s => s.items) : base && base.view === 'player' ? base.upNext : [];
   const upNext = all.filter(t => t.id !== title.id).slice(0, 4);
   const brand = browse?.brand ?? base?.brand ?? BRAND;
-  return { view: 'player', brand, title, upNext, licenseKey };
+  // The edition has the match centre when a chip leads to it, or when we came from it.
+  const matchCentre =
+    browse?.chips.some(c => c.tool === 'matchday') ||
+    base?.view === 'matchday' ||
+    (base?.view === 'player' && base.matchCentre);
+  return { view: 'player', brand, title, upNext, matchCentre, licenseKey };
 }
 
 export function BitflixApp({ payload }: { payload?: Payload }) {
   const browseCall = useCallTool('browse_catalog');
   const recCall = useCallTool('get_recommendations');
   const liveCall = useCallTool('whats_live');
+  const matchCall = useCallTool('matchday');
 
   const [nav, setNav] = useState<Payload | null>(null);
   const [localTitle, setLocalTitle] = useState<Title | null>(null);
 
   // Reset interaction state when a new tool result arrives.
-  const payloadKey = payload ? (payload.view === 'browse' ? `b:${payload.headline}` : `p:${payload.title.id}`) : 'none';
+  const payloadKey = payload ? keyOf(payload) : 'none';
   useEffect(() => {
     setNav(null);
     setLocalTitle(null);
@@ -430,7 +397,7 @@ export function BitflixApp({ payload }: { payload?: Payload }) {
   }
   const licenseKey = (base?.licenseKey || lastBrowseRef.current?.licenseKey) ?? '';
 
-  const showResult = (r: Awaited<ReturnType<typeof browseCall.callToolAsync>>) => {
+  const showResult = (r: { structuredContent?: Payload }) => {
     // An error result resolves with no payload to navigate to.
     if (r.structuredContent) {
       setNav(r.structuredContent);
@@ -445,11 +412,20 @@ export function BitflixApp({ payload }: { payload?: Payload }) {
         ? browseCall.callToolAsync(c.category ? { category: c.category } : {})
         : c.tool === 'get_recommendations'
           ? recCall.callToolAsync({})
-          : liveCall.callToolAsync({});
+          : c.tool === 'matchday'
+            ? matchCall.callToolAsync({})
+            : liveCall.callToolAsync({});
     call.then(showResult).catch(() => {});
   };
 
   const play = (t: Title) => setLocalTitle(t);
+  const openMatch = (fixtureId: string) => {
+    setLocalTitle(null);
+    matchCall
+      .callToolAsync({ match: fixtureId })
+      .then(showResult)
+      .catch(() => {});
+  };
   const back = () => {
     setLocalTitle(null);
     if (lastBrowseRef.current) {
@@ -474,7 +450,10 @@ export function BitflixApp({ payload }: { payload?: Payload }) {
     );
   }
   if (displayed.view === 'player') {
-    return <PlayerView p={displayed} onBack={back} onPlay={play} />;
+    return <PlayerView p={displayed} onBack={back} onPlay={play} onMatchday={openMatch} />;
+  }
+  if (displayed.view === 'matchday') {
+    return <MatchdayView key={keyOf(displayed)} p={displayed} onOpen={openMatch} onBack={back} />;
   }
   return <BrowseView p={displayed} onPlay={play} onChip={onChip} activeKey={activeChipFor(displayed)} />;
 }

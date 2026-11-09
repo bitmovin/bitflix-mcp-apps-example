@@ -7,6 +7,7 @@ declare module "skybridge/server" {
     "discover": true;
     "film": true;
     "live": true;
+    "matchday": true;
     "player": true;
     "recommend": true;
     "reel": true;
