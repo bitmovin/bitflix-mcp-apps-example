@@ -83,6 +83,22 @@ export function BitmovinPlayer({ title, licenseKey, onStatus, onPlayerReady, onC
       onPlayerReady?.(player);
       reportCast();
     });
+    // A clip cut from a longer asset pauses at its end, so it never runs on into
+    // whatever follows it; pressing play again replays it from the start.
+    const clipEnd = title.clipEndSec;
+    if (clipEnd !== undefined) {
+      const clipStart = title.sourceConfig?.options?.startOffset ?? 0;
+      player.on(PlayerEvent.TimeChanged, e => {
+        if (e.time >= clipEnd && player.isPlaying()) {
+          player.pause();
+        }
+      });
+      player.on(PlayerEvent.Play, () => {
+        if (player.getCurrentTime() >= clipEnd - 0.5) {
+          player.seek(clipStart);
+        }
+      });
+    }
     player.on(PlayerEvent.Error, e => {
       const detail = `Error ${e.code}: ${e.message ?? 'playback failed'}`;
       if (!cancelled) {

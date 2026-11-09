@@ -25,6 +25,15 @@ import { discoverPayload, echo, filmPayload, reelPayload } from './discover/scre
 import { resolveFilm } from './discover/search.js';
 import { type BitflixTool, EDITIONS } from './editions.js';
 import { env } from './env.js';
+import {
+  MOMENT_LABELS,
+  type MatchdayPayload,
+  defaultFixture,
+  matchdayPayload,
+  resolveFixture,
+  resolveMoment,
+  scoreLine,
+} from './matchday.js';
 
 /**
  * The Bitflix Edition this deployment serves, from BITFLIX_EDITION (see
@@ -199,6 +208,37 @@ function playerSummary(p: PlayerPayload): string {
   return `Now playing "${t.title}" (${t.kicker}) in the ${p.brand.name} player.${t.score ? ` Score: ${t.score}.` : ''}${t.synopsis ? ` ${t.synopsis}` : ''} Up next: ${p.upNext.map(u => u.title).join(', ')}.`;
 }
 
+function matchdaySummary(p: MatchdayPayload): string {
+  const f = p.fixture;
+  const head = `${f.home.name} v ${f.away.name}, ${f.competition}`;
+  const state =
+    f.state === 'live'
+      ? `live, ${f.clock}, ${scoreLine(f)}`
+      : f.state === 'ft'
+        ? `full time, ${scoreLine(f)}`
+        : `kick-off ${f.kickoff}`;
+  const moments = f.moments.map(m => `${m.clock} ${MOMENT_LABELS[m.kind]} (${f[m.side].name}): ${m.text}`).join(' ');
+  const stats = f.stats.map(s => `${s.label} ${s.home}${s.unit ?? ''}–${s.away}${s.unit ?? ''}`).join(', ');
+  const focus = p.focusMomentId ? f.moments.find(m => m.id === p.focusMomentId) : undefined;
+  const others = p.fixtures
+    .map(
+      o =>
+        `${o.home.name} v ${o.away.name} (${o.state === 'upcoming' ? `kick-off ${o.kickoff}` : o.state === 'live' ? `live, ${scoreLine(o)}` : `FT, ${scoreLine(o)}`})`,
+    )
+    .join('; ');
+  return [
+    `The ${p.brand.name} match centre is open on ${head}: ${state}.`,
+    f.state === 'live' ? 'The live broadcast is playing.' : '',
+    focus ? `Now replaying the ${focus.clock} ${MOMENT_LABELS[focus.kind].toLowerCase()}.` : '',
+    moments ? `Key moments so far: ${moments}` : 'No moments yet.',
+    stats ? `Stats: ${stats}.` : '',
+    `Other fixtures today: ${others}.`,
+    'The user can tap any moment to replay it. Call `matchday` with `moment` to replay one for them.',
+  ]
+    .filter(Boolean)
+    .join(' ');
+}
+
 export const app = new Skybridge({
   ...SERVER_INFO,
   capabilities: {},
@@ -287,6 +327,59 @@ export const app = new Skybridge({
         () => {
           const p = livePayload(KEY, EDITION);
           return { structuredContent: p, content: [{ type: 'text', text: browseSummary(p) }], isError: false };
+        },
+      )
+      // ── matchday ─────────────────────────────────────────────────────
+      .registerTool(
+        {
+          name: 'matchday',
+          title: titleOf('matchday', 'Matchday'),
+          description: [
+            `Open the ${EDITION.brand.name} match centre for a game: live scoreboard, key moments, stats and today's other fixtures,`,
+            'with the live broadcast playing and every key moment replayable as a clip.',
+            "Call for 'catch me up on the derby', 'what's the score?', 'what did I miss?', 'show me the second goal'.",
+            'No arguments opens the main live game. Pass `match` (a team, competition or fixture id) to pick a game,',
+            "and `moment` (e.g. 'second goal', 'the solo goal', 'fast break', \"58'\") to open on that replay.",
+            'Narrate the catch-up from the key moments in the result.',
+          ].join('\n'),
+          inputSchema: {
+            match: z
+              .string()
+              .trim()
+              .max(100)
+              .optional()
+              .describe("Optional team, competition or fixture id, e.g. 'derby', 'Boston', 'coastal-semi'."),
+            moment: z
+              .string()
+              .trim()
+              .max(100)
+              .optional()
+              .describe("Optional moment to replay, e.g. 'second goal', 'solo goal', 'fast break', \"12'\"."),
+          },
+          annotations: READ_ONLY,
+          view: {
+            component: 'matchday',
+            description: `${EDITION.brand.name} match centre`,
+            csp: VIEW_CSP,
+            _meta: INLINE_OR_FULLSCREEN,
+          },
+          // The widget calls this itself, from the fixture strip and the player's match-centre button.
+          _meta: toolMeta('matchday'),
+        },
+        ({ match, moment }) => {
+          const found = match ? resolveFixture(match) : undefined;
+          const fixture = found ?? defaultFixture();
+          const focus = moment ? resolveMoment(fixture, moment) : undefined;
+          const p = matchdayPayload({ licenseKey: KEY, fixture, moment: focus, brand: EDITION.brand });
+          const notes = [
+            match && !found ? `No fixture today matches "${echo(match)}".` : '',
+            moment && !focus ? `No moment in this game matches "${echo(moment)}".` : '',
+          ].filter(Boolean);
+          return {
+            structuredContent: p,
+            content: [{ type: 'text', text: [...notes, matchdaySummary(p)].join(' ') }],
+            isError: false,
+          };
         },
       )
       // ── play_title ───────────────────────────────────────────────────

@@ -24,6 +24,7 @@ export type BitflixTool =
   | 'browse_catalog'
   | 'get_recommendations'
   | 'whats_live'
+  | 'matchday'
   | 'play_title'
   | 'run_diagnostics'
   | 'discover'
@@ -74,6 +75,7 @@ export const EDITIONS: Record<EditionId, Edition> = {
       'browse_catalog',
       'get_recommendations',
       'whats_live',
+      'matchday',
       'play_title',
       'discover',
       'trailer_reel',
@@ -86,6 +88,7 @@ export const EDITIONS: Record<EditionId, Edition> = {
       chip('Home', 'home'),
       { label: 'For You', key: 'foryou', tool: 'get_recommendations' },
       { label: 'Live', key: 'live', tool: 'whats_live' },
+      { label: 'Matchday', key: 'matchday', tool: 'matchday' },
       chip('Sports', 'sports', 'sports'),
       chip('News', 'news', 'news'),
       chip('Films', 'films', 'films'),
@@ -146,15 +149,17 @@ export const EDITIONS: Record<EditionId, Edition> = {
     serverName: 'bitflix-sports',
     description: 'Bitflix Sports: live games, full replays and highlights, inside the chat.',
     brand: { name: 'Bitflix Sports', tagline: 'Every game. Every play.', wordmark: 'BITFLIX', edition: 'Sports' },
-    scope: 'live games with scores, full game replays and highlights (basketball, football, hockey)',
+    scope:
+      'live games with scores, full game replays and highlights (basketball, football, hockey), and a match centre',
     categories: ['basketball', 'football', 'hockey', 'highlights', 'live'],
     includes: isSport,
-    tools: ['browse_catalog', 'whats_live', 'play_title'],
+    tools: ['browse_catalog', 'matchday', 'whats_live', 'play_title'],
     entrypoints: { global: 'browse_catalog', thread: 'whats_live' },
-    titles: { browse_catalog: 'Bitflix Sports', whats_live: 'Live Scores' },
+    titles: { browse_catalog: 'Bitflix Sports', matchday: 'Match Centre', whats_live: 'Live Scores' },
     chips: [
       chip('Home', 'home'),
       { label: 'Live', key: 'live', tool: 'whats_live' },
+      { label: 'Match Centre', key: 'matchday', tool: 'matchday' },
       chip('Basketball', 'basketball', 'basketball'),
       chip('Football', 'football', 'football'),
       chip('Hockey', 'hockey', 'hockey'),
