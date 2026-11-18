@@ -3,6 +3,7 @@ import { UIFactory } from 'bitmovin-player-ui';
 import 'bitmovin-player-ui/dist/css/bitmovinplayer-ui.css';
 import { type ReactNode, useEffect, useEffectEvent, useRef, useState } from 'react';
 import { type Film, type Preview, isBeforePreview, isPastPreview, previewRemaining } from '../../../discover/model.js';
+import '../../utils/routeWindowOpenToHost.js';
 import { ICON } from '../cover.js';
 import { Icon } from '../Icon.js';
 import { PlayerLoading, PreviewErrorCard } from './shared.js';

@@ -3,6 +3,7 @@ import { UIFactory } from 'bitmovin-player-ui';
 import 'bitmovin-player-ui/dist/css/bitmovinplayer-ui.css';
 import { useEffect, useRef, useState } from 'react';
 import type { Title } from '../../catalog.js';
+import '../utils/routeWindowOpenToHost.js';
 
 export type PlayerStatus = { state: 'loading' } | { state: 'ready' } | { state: 'error'; detail: string };
 

@@ -40,6 +40,9 @@ src/
     ├── css/index.css       # stylesheet (theme, rails, tiles, chips, player stage)
     ├── css/discover.css    # Discover's styles: search, film detail, preview end card, trailer reel
     ├── hooks.ts            # view hooks
+    ├── utils/
+    │   ├── hostRoutedOpen.ts         # window.open replacement that hands web links to the host
+    │   └── routeWindowOpenToHost.ts  # applies window.open replacement
     └── components/
         ├── BitflixApp.tsx          # shared widget: browse + player + cast + chips
         ├── BitmovinPlayer.tsx      # Bitmovin Player in a React component
@@ -49,7 +52,7 @@ src/
         ├── cover.ts                # inline SVG cover art, one of nine hand-drawn scenes
         └── discover/               # DiscoverApp, TrailerReel, PreviewPlayer (+ lazy wrapper), shared bits
 test/
-├── unit/               # Discover: catalogue, search, screens, model helpers
+├── unit/               # unit tests
 └── mcp.test.ts         # boots the built server and checks what it puts on the wire
 ```
 
