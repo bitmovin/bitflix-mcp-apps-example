@@ -3,7 +3,7 @@
 Bitflix is a fictional streaming network (sports · news · films · originals) shipped as an
 [MCP App](https://modelcontextprotocol.io).
 
-You open it, browse it, get recommendations, and watch, all by talking to ChatGPT or Claude. It's a reference
+You open it, browse it, get recommendations, and watch, all by talking to ChatGPT, Claude or Grok. It's a reference
 implementation, and a working answer to:
 
 > _What does an online video platform need to be when the "app" is a conversation and the UI is generated on the fly?_
@@ -174,7 +174,7 @@ npm run dev                 # then open the DevTools playground at http://localh
 A Bitmovin Player license only works on the domains you register for it in the
 [Bitmovin dashboard](https://dashboard.bitmovin.com/player/licenses).
 
-- Allow-list the MCP hosts' sandbox domains: `claudemcpcontent.com` for Claude and `oaiusercontent.com` for ChatGPT.
+- Allow-list the MCP hosts' sandbox domains: `claudemcpcontent.com` for Claude, `oaiusercontent.com` for ChatGPT and `grokusercontent.com` for Grok.
   The dashboard does not accept wildcards, and a listed domain covers all its subdomains, which is where the widgets
   run.
 
@@ -195,7 +195,7 @@ A Bitmovin Player license only works on the domains you register for it in the
 
 If the MCP app does not render:
 
-- Use the Claude or ChatGPT app. Not every MCP host renders MCP Apps views; some may show only the tool call and
+- Use the Claude, ChatGPT or Grok. Not every MCP host renders MCP Apps views; some may show only the tool call and
   its text result.
 - Update the Claude/ChatGPT app. MCP Apps support is new, and older versions may not render views.
 - Open the MCP URL (e.g. `https://foo-bar-42.alpic.dev/mcp`) in a web browser. A running server answers with a
@@ -206,7 +206,7 @@ If the MCP app does not render:
 
 ## Known Issues & Limitations
 
-The MCP host (e.g. Claude, ChatGPT) controls the widget sandbox's capabilities. The
+The MCP host (e.g. Claude, ChatGPT, Grok) controls the widget sandbox's capabilities. The
 [MCP Apps specification](https://apps.extensions.modelcontextprotocol.io) is still under active development, so those
 capabilities currently vary between hosts and shift as the specification and the host implementations evolve.
 Depending on which host is used, the following features may behave differently or not work at all:
