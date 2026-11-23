@@ -1,7 +1,8 @@
-import type { ReactNode } from 'react';
+import qrcode from 'qrcode-generator';
+import { type ReactNode, useMemo, useState } from 'react';
 import { useOpenExternal } from 'skybridge/web';
 import { type Brand, type Film, hasPreview } from '../../../discover/model.js';
-import { ICON } from '../cover.js';
+import { ICON, coverArt } from '../cover.js';
 import { Icon } from '../Icon.js';
 
 /** The app's top bar: wordmark, a section label, and an optional right-hand slot. */
@@ -104,4 +105,108 @@ export function PreviewErrorCard({ title, handoff, detail }: { title: string; ha
  */
 export function ModelContext({ text }: { text: string }) {
   return <span data-llm={text} hidden />;
+}
+
+/**
+ * A QR code for `url`, drawn as SVG from the code's modules (no markup string
+ * from the library is injected). Scanning it opens the link on a phone or TV.
+ */
+function QrCode({ url, label }: { url: string; label: string }) {
+  const { size, path } = useMemo(() => {
+    const qr = qrcode(0, 'M');
+    qr.addData(url);
+    qr.make();
+    const n = qr.getModuleCount();
+    let d = '';
+    for (let row = 0; row < n; row++) {
+      for (let col = 0; col < n; col++) {
+        if (qr.isDark(row, col)) {
+          d += `M${col + 2} ${row + 2}h1v1h-1z`;
+        }
+      }
+    }
+    return { size: n + 4, path: d }; // a two-module quiet zone on each side
+  }, [url]);
+  return (
+    <svg className="qr" viewBox={`0 0 ${size} ${size}`} role="img" aria-label={label} shapeRendering="crispEdges">
+      <rect width={size} height={size} fill="#ffffff" />
+      <path d={path} fill="#000000" />
+    </svg>
+  );
+}
+
+/**
+ * The hand-off to a TV. Casting is blocked inside AI-assistant sandboxes, so
+ * the film's link goes out as a QR code: scan it with a phone or a TV app's
+ * camera, or open the link on the TV. Uses the film's TV-app deep link when
+ * the catalogue has one, otherwise its watch page.
+ */
+export function TvHandoff({ film, provider }: { film: Film; provider: string }) {
+  const [open, setOpen] = useState(false);
+  const url = film.tvUrl ?? film.watchUrl;
+  return (
+    <div className="tv-handoff">
+      <button className="btn btn-ghost" aria-expanded={open} onClick={() => setOpen(o => !o)}>
+        <Icon html={ICON.tv} />
+        Watch on TV
+      </button>
+      {open ? (
+        <div className="tv-panel" role="region" aria-label={`Open ${film.title} on another screen`}>
+          <QrCode url={url} label={`QR code for ${film.title} on ${provider}`} />
+          <div className="tv-text">
+            <div className="tv-title">Scan to watch on your TV or phone</div>
+            <div className="tv-sub">
+              Opens {film.title} on {provider}. Casting is not available inside the chat.
+            </div>
+            <div className="tv-url">{url.replace(/^https:\/\//, '')}</div>
+          </div>
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
+// The posters ship with the views, so they load from the app's own server.
+const POSTER_URLS = import.meta.glob<string>('../../assets/posters/*.jpg', {
+  eager: true,
+  query: '?url',
+  import: 'default',
+});
+const posterUrl = (id: string) => POSTER_URLS[`../../assets/posters/${id}.jpg`];
+
+/** Where a cover is drawn: a 2:3 card, a 16:9 card, the 16:9 hero, or a small queue thumbnail. */
+export type CoverSlot = 'poster' | 'wide' | 'hero' | 'thumb';
+
+/**
+ * A film's cover: its poster where it has one, over the drawn cover as a
+ * backdrop; otherwise the drawn cover alone. A portrait poster fills a 2:3
+ * card and sits whole on the backdrop in a 16:9 one; a poster marked noCrop
+ * is never cropped.
+ */
+export function CoverImage({ film, slot }: { film: Film; slot: CoverSlot }) {
+  const url = film.poster ? posterUrl(film.id) : undefined;
+  const fills =
+    film.poster &&
+    !film.poster.noCrop &&
+    (film.poster.orientation === 'landscape' || slot === 'poster' || slot === 'thumb');
+  return (
+    <>
+      <span
+        className="cover-fill"
+        aria-hidden="true"
+        dangerouslySetInnerHTML={{
+          __html: coverArt(film.cover, url ? '' : film.title.charAt(0), { hero: slot === 'hero' }),
+        }}
+      />
+      {url ? (
+        <img
+          className={`poster-img ${fills ? 'fit-cover' : 'fit-contain'} slot-${slot}`}
+          src={url}
+          alt=""
+          loading="lazy"
+          decoding="async"
+        />
+      ) : null}
+    </>
+  );
 }

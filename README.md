@@ -20,11 +20,15 @@ real open movies, watch a 60-second preview in the chat, then follow a link to w
 Discover opens from the left navigation bar and its Trailer Reel from a conversation's side panel. It needs no DRM.
 See [Bitflix Discover](#bitflix-discover).
 
+The same code also ships as **Bitflix Editions**: a Sports, a News and a Streaming app, each looking like one kind of
+video provider would build it. See [Bitflix Editions](#bitflix-editions).
+
 ## What's in the box
 
 ```
 src/
-├── catalog.ts          # content: titles, public test streams, sections, search/recommend
+├── catalog.ts          # content: titles, public test streams, search/recommend, screens per edition
+├── editions.ts         # Bitflix Editions: all-in-one, Sports, News, Streaming
 ├── index.ts            # entry point: runs the app
 ├── server.ts           # Skybridge app + 8 tools (5 Bitflix, 3 Discover), CSP, plugin-extension metadata
 ├── discover/           # Bitflix Discover, server side
@@ -142,9 +146,41 @@ playground. Bitmovin does not control those hosts; for your own app, serve previ
 `DISCOVER_CSP` allow-lists exactly those stream origins plus `licensing.bitmovin.com`, and declares Blender Studio as
 a redirect domain so ChatGPT opens the watch links without its safe-link interstitial.
 
+**Posters.** Each film shows its poster from the project's gallery on Blender Studio (Tears of Steel has none there,
+so it uses the project's key art). The images ship with the views in `src/views/assets/posters/`, so they load from
+the app's own server and need no extra CSP entry. Portrait posters fill the 2:3 cards and stand whole on the drawn
+cover in 16:9 frames. Agent 327's poster is CC BY-ND 4.0, so it is never cropped (`Poster.noCrop`); the others are
+CC BY 4.0. A film without a poster falls back to the drawn cover.
+
 **License key.** Discover sends the player key in each tool result's `_meta`, which only the widget reads, not in
 `structuredContent`, which hosts also hand to the model. That keeps it out of the conversation, not secret: anyone
 who can reach the MCP URL can call a tool and read it. Use a dedicated key, never a production one.
+
+## Bitflix Editions
+
+One codebase, four apps. A deployment serves one edition, picked by the `BITFLIX_EDITION` environment variable, so
+each edition is its own MCP server, connector and ChatGPT nav entry:
+
+| `BITFLIX_EDITION` | App               | Looks like                         | Tools                                                 | ChatGPT entry points                |
+| ----------------- | ----------------- | ---------------------------------- | ----------------------------------------------------- | ----------------------------------- |
+| `all` (default)   | Bitflix           | everything, plus Discover          | all eight                                             | Discover (nav), Trailer Reel (side) |
+| `sports`          | Bitflix Sports    | a sports league (NBA-like)         | `browse_catalog`, `whats_live`, `play_title`          | Home (nav), Live Scores (side)      |
+| `news`            | Bitflix News      | a news broadcaster (BBC-like)      | the above plus `get_recommendations` (catch up)       | Home (nav), Live Channel (side)     |
+| `streaming`       | Bitflix Streaming | a streaming service (Netflix-like) | `browse_catalog`, `get_recommendations`, `play_title` | Home (nav), For You (side)          |
+
+Each edition has its own name, title selection, home screen and filter chips, and every screen, search and "up next"
+stays inside it. In the News edition, `get_recommendations` becomes "Catch me up": every bulletin you missed, then the
+live channel. Everything an edition is lives in `src/editions.ts`; the server registers only that edition's tools.
+
+Run an edition locally with `BITFLIX_EDITION=sports npm run dev`. To deploy one, create an Alpic project per edition
+from this repo and set `BITFLIX_EDITION` (and `BITMOVIN_PLAYER_KEY`) in its environment variables.
+
+The titles are the same fictional Bitflix catalogue and demo streams in every edition. Real sports and news footage
+is not freely licensed, so a production edition would plug in the provider's own catalogue.
+
+**TV hand-off in Discover.** Casting is blocked inside both hosts, so Discover's film screen has a "Watch on TV"
+button instead: it shows a QR code and the link for the film (a `tvUrl` deep link into the provider's TV app where
+the catalogue has one, otherwise the watch page). Scan it with a phone or a TV app's camera.
 
 ## Bitmovin Player license key
 
@@ -162,12 +198,13 @@ cp .env.example .env        # create .env file and add your own BITMOVIN_PLAYER_
 npm run dev                 # then open the DevTools playground at http://localhost:3000
 ```
 
-- `npm run dev`: local DevTools playground at port `3000` (run each tool, audit CSP, etc.)
+- `npm run dev`: local DevTools playground at port `3000` (run each tool, audit CSP, etc.); prefix
+  `BITFLIX_EDITION=sports` (or `news`, `streaming`) to run an edition
 - `npm run dev:tunnel`: same, exposed over a stable tunnel you can add to Claude/ChatGPT
 - `npm run build` / `npm start`: production build / serve
 - `npm run deploy`: deploy to [Alpic](https://alpic.ai/) for a permanent HTTPS URL
-- `npm test`: Discover's unit tests, then an MCP integration test that builds and boots the server (`test:unit` and
-  `test:mcp` run them separately)
+- `npm test`: unit tests (Discover and Editions), then MCP integration tests that build and boot the server, once
+  per edition (`test:unit` and `test:mcp` run them separately)
 
 **Player domain allow-listing:**
 
@@ -239,7 +276,7 @@ To run this app you must get your **own** Bitmovin Player license key from the
 
 The streams in the catalog are third-party public test assets, used for demonstration only.
 
-Bitflix Discover's films are © Blender Foundation | studio.blender.org, published under Creative Commons Attribution
+Bitflix Discover's films and posters are © Blender Foundation | studio.blender.org, published under Creative Commons Attribution
 licenses (CC BY 4.0 unless noted otherwise, see Blender Studio's
 [terms](https://studio.blender.org/terms-and-conditions/)).
 
